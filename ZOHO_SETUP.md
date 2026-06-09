@@ -12,19 +12,42 @@ server functions, **never** sent to the browser. No one can read them from the w
 
 ---
 
-## A. Add the shared database (Upstash Redis — free)
+## A. Add the shared database (Supabase — free)
 
 This is where candidates/matches are stored so both dashboards see the same data.
 
-1. Go to **Vercel → your project `boardmatch-dashboard` → Storage → Create Database**.
-2. Choose **Upstash → Redis** (Marketplace), pick the region **eu-west-1 (Ireland)**, create it.
-3. When asked, **Connect** it to the `boardmatch-dashboard` project (all environments).
+1. Sign up at **https://supabase.com** → **New project** (pick region **Central EU (Frankfurt)**,
+   set a database password, create — takes ~1 min to provision).
+2. Open the project → **SQL Editor → New query**, paste this and click **Run**:
 
-That's it — Vercel automatically adds `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
-(or `KV_REST_API_URL` / `KV_REST_API_TOKEN`). The code accepts either pair.
+   ```sql
+   create table if not exists candidates (
+     id text primary key,
+     data jsonb not null,
+     created_at timestamptz default now()
+   );
+   create table if not exists matches (
+     id text primary key,
+     data jsonb not null,
+     created_at timestamptz default now()
+   );
+   ```
+3. Get your keys: **Project Settings → API** → copy the **Project URL** and the
+   **`service_role`** key (the secret one — *not* the `anon` key).
 
-✅ Test: open `https://boardmatch-dashboard.vercel.app/api/candidates` — it should return
-`{"configured":true,"candidates":[],"matches":[]}` after a redeploy.
+Then either give those two values to me (I'll set them in Vercel for you), **or** add them yourself
+in **Vercel → project → Settings → Environment Variables**:
+
+| Name | Value |
+|------|-------|
+| `SUPABASE_URL` | the Project URL (e.g. `https://abcd.supabase.co`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | the `service_role` secret key |
+
+✅ Test (after a redeploy): `https://boardmatch-dashboard.vercel.app/api/candidates` should return
+`{"configured":true,"candidates":[],"matches":[]}`.
+
+> The `service_role` key bypasses row-level security and is server-only — keep it in Vercel env
+> vars, never in the frontend.
 
 ---
 
@@ -89,7 +112,7 @@ optional `ZOHO_FIELD_MAP` variable (see below).
 
 Then **Deployments → ⋯ on the latest → Redeploy** (or push any commit).
 
-> Upstash/KV variables from step A are added automatically — you don't set those by hand.
+> The `SUPABASE_*` variables from step A must also be present (you add them, or I do).
 
 ---
 

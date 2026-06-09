@@ -1,34 +1,38 @@
 // POST /api/interest — a candidate clicked "I'm interested" on a landing page.
 // Flow: validate {firstName,lastName,email,companyId} → look the person up in Zoho
 // by email (pulling their REAL data) → upsert candidate + an "Interested" match
-// into Upstash Redis → both dashboards read it from /api/candidates.
+// into Supabase → both dashboards read it from /api/candidates.
 //
 // Self-contained (no shared imports) so the function always bundles on Vercel.
 // All secrets come from Vercel environment variables (server-side only).
 
 export const config = { runtime: 'nodejs' }
 
-// ── Redis (Upstash REST) ────────────────────────────────────────────────────
-const DB_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL
-const DB_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
-const dbConfigured = () => Boolean(DB_URL && DB_TOKEN)
+// ── Database (Supabase / Postgres via REST) ─────────────────────────────────
+const SB_URL = process.env.SUPABASE_URL
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY
+const dbConfigured = () => Boolean(SB_URL && SB_KEY)
+const sbHeaders = () => ({
+  apikey: SB_KEY as string,
+  Authorization: `Bearer ${SB_KEY}`,
+  'Content-Type': 'application/json',
+})
 
-async function redis(args: (string | number)[]): Promise<any> {
-  const r = await fetch(DB_URL as string, {
+async function selectData(table: string): Promise<any[]> {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?select=data`, { headers: sbHeaders() })
+  if (!r.ok) throw new Error(`Supabase select ${table} ${r.status}: ${await r.text()}`)
+  const rows: { data: any }[] = await r.json()
+  return rows.map((x) => x.data).filter(Boolean)
+}
+
+// Upsert one row keyed by id (merges on primary-key conflict).
+async function upsertData(table: string, id: string, data: unknown): Promise<void> {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${DB_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(args),
+    headers: { ...sbHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ id, data }),
   })
-  const j: any = await r.json()
-  if (j && j.error) throw new Error('Redis error: ' + j.error)
-  return j ? j.result : null
-}
-async function hvals(hash: string): Promise<any[]> {
-  const res: string[] = (await redis(['HVALS', hash])) || []
-  return res.map((s) => { try { return JSON.parse(s) } catch { return null } }).filter(Boolean)
-}
-async function hset(hash: string, field: string, obj: unknown): Promise<void> {
-  await redis(['HSET', hash, field, JSON.stringify(obj)])
+  if (!r.ok) throw new Error(`Supabase upsert ${table} ${r.status}: ${await r.text()}`)
 }
 
 // ── Zoho CRM ────────────────────────────────────────────────────────────────
@@ -172,8 +176,8 @@ export default async function handler(req: any, res: any) {
     }
 
     // 2) Upsert candidate (reuse by email).
-    const candidates = await hvals('bm:candidates')
-    const matches = await hvals('bm:matches')
+    const candidates = await selectData('candidates')
+    const matches = await selectData('matches')
     let candidate = candidates.find((c) => c.email?.toLowerCase() === email.toLowerCase())
     const isNew = !candidate
 
@@ -196,10 +200,10 @@ export default async function handler(req: any, res: any) {
         avatarColor: pickColor(email),
         createdAt: today(),
       }
-      await hset('bm:candidates', candidate.id, candidate)
+      await upsertData('candidates', candidate.id, candidate)
     } else if (zoho) {
       candidate = { ...candidate, ...nonEmpty(zoho) }
-      await hset('bm:candidates', candidate.id, candidate)
+      await upsertData('candidates', candidate.id, candidate)
     }
 
     // 3) Upsert the match into the Interested stage.
@@ -224,7 +228,7 @@ export default async function handler(req: any, res: any) {
           },
         ],
       }
-      await hset('bm:matches', match.id, match)
+      await upsertData('matches', match.id, match)
     }
 
     res.status(200).json({ ok: true, configured: true, matchedInZoho, isNew, candidate, match })
