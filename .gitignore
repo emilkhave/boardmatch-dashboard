@@ -25,3 +25,4 @@ npm-debug.log*
 
 # TS build info
 *.tsbuildinfo
+.env*
