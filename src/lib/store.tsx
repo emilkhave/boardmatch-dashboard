@@ -7,35 +7,39 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Candidate, Match, MatchActivity, PipelineStage } from '../types'
+import type { Candidate, Company, Match, MatchActivity, PipelineStage } from '../types'
 import { PIPELINE_STAGES } from '../types'
 import { mockCandidates } from '../data/mockCandidates'
+import { mockCompanies } from '../data/mockCompanies'
 import { mockMatches } from '../data/mockMatches'
 import { TODAY_ISO } from './format'
 
 // ---------------------------------------------------------------------------
 // A lightweight in-memory store for the mutable parts of the prototype —
-// candidates and the pipeline matches. Seeded from the mock data and persisted
-// to localStorage so moves and edits survive a refresh during a demo.
-// (Companies are treated as immutable, so they stay as static imports.)
+// companies, candidates and the pipeline matches. Seeded from the mock data and
+// persisted to localStorage so moves and edits survive a refresh during a demo.
 // ---------------------------------------------------------------------------
 
-const STORAGE_KEY = 'boardmatch.data.v2'
+const STORAGE_KEY = 'boardmatch.data.v3'
 
 interface StoredData {
+  companies: Company[]
   candidates: Candidate[]
   matches: Match[]
 }
 
 interface DataContextValue {
+  companies: Company[]
   candidates: Candidate[]
   matches: Match[]
+  getCompany: (id: string) => Company | undefined
   getCandidate: (id: string) => Candidate | undefined
   matchesForCompany: (companyId: string) => Match[]
   matchesForCandidate: (candidateId: string) => Match[]
   moveMatch: (matchId: string, stage: PipelineStage, author?: string) => void
   updateMatch: (matchId: string, patch: Partial<Match>) => void
   updateCandidate: (candidateId: string, patch: Partial<Candidate>) => void
+  updateCompany: (companyId: string, patch: Partial<Company>) => void
   resetData: () => void
 }
 
@@ -44,6 +48,7 @@ const DataContext = createContext<DataContextValue | null>(null)
 function seed(): StoredData {
   // Deep clone so we never mutate the imported mock arrays.
   return {
+    companies: structuredClone(mockCompanies),
     candidates: structuredClone(mockCandidates),
     matches: structuredClone(mockMatches),
   }
@@ -78,6 +83,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       /* ignore quota / private-mode errors in the prototype */
     }
   }, [data])
+
+  const getCompany = useCallback(
+    (id: string) => data.companies.find((c) => c.id === id),
+    [data.companies],
+  )
 
   const getCandidate = useCallback(
     (id: string) => data.candidates.find((c) => c.id === id),
@@ -125,28 +135,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  const updateCompany = useCallback((companyId: string, patch: Partial<Company>) => {
+    setData((prev) => ({
+      ...prev,
+      companies: prev.companies.map((c) => (c.id === companyId ? { ...c, ...patch } : c)),
+    }))
+  }, [])
+
   const resetData = useCallback(() => setData(seed()), [])
 
   const value = useMemo<DataContextValue>(
     () => ({
+      companies: data.companies,
       candidates: data.candidates,
       matches: data.matches,
+      getCompany,
       getCandidate,
       matchesForCompany,
       matchesForCandidate,
       moveMatch,
       updateMatch,
       updateCandidate,
+      updateCompany,
       resetData,
     }),
     [
       data,
+      getCompany,
       getCandidate,
       matchesForCompany,
       matchesForCandidate,
       moveMatch,
       updateMatch,
       updateCandidate,
+      updateCompany,
       resetData,
     ],
   )

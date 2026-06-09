@@ -4,6 +4,7 @@ import type { Session } from '../types'
 interface AuthContextValue {
   session: Session | null
   login: (session: Session) => void
+  updateSession: (patch: Partial<Session>) => void
   logout: () => void
 }
 
@@ -32,6 +33,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const updateSession = (patch: Partial<Session>) => {
+    setSession((prev) => {
+      if (!prev) return prev
+      const next = { ...prev, ...patch }
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+  }
+
   const logout = () => {
     setSession(null)
     try {
@@ -41,7 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  return <AuthContext.Provider value={{ session, login, logout }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ session, login, updateSession, logout }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth(): AuthContextValue {

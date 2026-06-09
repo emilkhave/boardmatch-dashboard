@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useData } from '../lib/store'
-import { companyById } from '../data/mockCompanies'
 import { Avatar, Tag } from '../components/ui'
 import { ScorePill } from '../components/StageBadge'
 import { StatCard } from '../components/StatCard'
@@ -10,20 +8,19 @@ import { CandidateDetail } from '../components/CandidateDetail'
 import { ACTIVE_STAGES, PIPELINE_STAGES, type Candidate, type Match, type PipelineStage } from '../types'
 import { stageStyles, stageCounts } from '../lib/pipeline'
 import { relativeDays, daysSince } from '../lib/format'
-import { IconLogout, IconUsers, IconStar, IconClock, IconCheck } from '../components/icons'
+import { IconUsers, IconStar, IconClock, IconCheck } from '../components/icons'
 
 // Stages that still need active follow-up (excludes the terminal columns).
 const FOLLOW_UP_STAGES: PipelineStage[] = ['interested', 'first_meeting', 'in_dialogue', 'negotiation']
 
 export function CompanyDashboard() {
-  const { session, logout } = useAuth()
-  const navigate = useNavigate()
-  const { matchesForCompany, getCandidate, moveMatch, updateMatch, updateCandidate } = useData()
+  const { session } = useAuth()
+  const { getCompany, matchesForCompany, getCandidate, moveMatch, updateMatch, updateCandidate } = useData()
 
   const [openMatchId, setOpenMatchId] = useState<string | null>(null)
   const [dragStage, setDragStage] = useState<PipelineStage | null>(null)
 
-  const company = session?.companyId ? companyById(session.companyId) : undefined
+  const company = session?.companyId ? getCompany(session.companyId) : undefined
   const pipeline = useMemo(
     () => (company ? matchesForCompany(company.id) : []),
     [company, matchesForCompany],
@@ -32,15 +29,10 @@ export function CompanyDashboard() {
 
   if (!company) {
     return (
-      <div className="grid min-h-screen place-items-center">
+      <div className="grid min-h-[40vh] place-items-center">
         <p className="text-sm text-ink-500">No company selected.</p>
       </div>
     )
-  }
-
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
   }
 
   const openMatch = pipeline.find((m) => m.id === openMatchId) ?? null
@@ -59,37 +51,13 @@ export function CompanyDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-sand-100">
-      {/* ── Top bar ──────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 border-b border-ink-200/60 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1500px] items-center gap-3 px-5 py-3 lg:px-8">
-          <Avatar name={company.name} color={company.logoColor} size="md" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-ink-900">{company.name}</p>
-            <p className="truncate text-xs text-ink-400">Board recruitment workspace</p>
-          </div>
-          <div className="hidden items-center gap-2 rounded-xl bg-sand-100 px-3 py-1.5 text-xs text-ink-500 sm:flex">
-            <span className="font-medium text-ink-700">{session?.name}</span>
-            <span className="text-ink-300">·</span>
-            <span>{company.contactRole}</span>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-ink-400 transition hover:bg-ink-100 hover:text-ink-700"
-            title="Sign out"
-          >
-            <IconLogout width={18} height={18} />
-          </button>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-[1500px] space-y-6 px-5 py-6 lg:px-8">
-        {/* Banner — kept intentionally clean */}
-        <div className="overflow-hidden rounded-2xl bg-accent-800 p-6 text-white shadow-soft">
-          <h1 className="font-display text-2xl font-semibold">
-            {company.name} <span className="font-normal text-accent-100">Pipeline</span>
-          </h1>
-        </div>
+    <div className="space-y-6">
+      {/* Banner — kept intentionally clean */}
+      <div className="overflow-hidden rounded-2xl bg-accent-800 p-6 text-white shadow-soft">
+        <h1 className="font-display text-2xl font-semibold">
+          {company.name} <span className="font-normal text-accent-100">Pipeline</span>
+        </h1>
+      </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -147,8 +115,6 @@ export function CompanyDashboard() {
             ))}
           </div>
         </div>
-      </div>
-
       {openMatch && openCandidate && (
         <CandidateDetail
           candidate={openCandidate}

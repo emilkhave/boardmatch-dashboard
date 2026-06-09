@@ -8,7 +8,9 @@ import { AdminCompanies } from './pages/admin/AdminCompanies'
 import { AdminCompanyDetail } from './pages/admin/AdminCompanyDetail'
 import { AdminCandidates } from './pages/admin/AdminCandidates'
 import { AdminMatches } from './pages/admin/AdminMatches'
+import { CompanyLayout } from './components/CompanyLayout'
 import { CompanyDashboard } from './pages/CompanyDashboard'
+import { CompanySettings } from './pages/CompanySettings'
 import type { Role } from './types'
 
 function RequireRole({ role, children }: { role: Role; children: React.ReactNode }) {
@@ -56,10 +58,13 @@ export default function App() {
             path="/company"
             element={
               <RequireRole role="company">
-                <CompanyDashboard />
+                <CompanyLayout />
               </RequireRole>
             }
-          />
+          >
+            <Route index element={<CompanyDashboard />} />
+            <Route path="settings" element={<CompanySettings />} />
+          </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
