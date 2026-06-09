@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
+import { DataProvider } from './lib/store'
 import { Login } from './pages/Login'
 import { AdminLayout } from './components/AdminLayout'
 import { AdminOverview } from './pages/admin/AdminOverview'
@@ -28,7 +29,8 @@ function LandingRedirect() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <DataProvider>
+        <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingRedirect />} />
           <Route path="/login" element={<Login />} />
@@ -59,9 +61,10 @@ export default function App() {
             }
           />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </DataProvider>
     </AuthProvider>
   )
 }

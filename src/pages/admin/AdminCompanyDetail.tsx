@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { companyById } from '../../data/mockCompanies'
-import { matchesForCompany } from '../../data/mockMatches'
-import { candidateById } from '../../data/mockCandidates'
+import { useData } from '../../lib/store'
 import { Avatar, Card, CardHeader, Tag } from '../../components/ui'
 import { StageBadge, ScorePill } from '../../components/StageBadge'
 import { CandidateDetail } from '../../components/CandidateDetail'
@@ -10,12 +9,12 @@ import { PIPELINE_STAGES } from '../../types'
 import { stageCounts } from '../../lib/pipeline'
 import { relativeDays } from '../../lib/format'
 import { IconArrowRight, IconMail, IconPin, IconBriefcase } from '../../components/icons'
-import type { Match } from '../../types'
 
 export function AdminCompanyDetail() {
   const { id } = useParams()
+  const { matchesForCompany, getCandidate, moveMatch, updateMatch, updateCandidate } = useData()
   const company = id ? companyById(id) : undefined
-  const [openMatch, setOpenMatch] = useState<Match | null>(null)
+  const [openMatchId, setOpenMatchId] = useState<string | null>(null)
 
   if (!company) {
     return (
@@ -30,7 +29,8 @@ export function AdminCompanyDetail() {
 
   const pipeline = matchesForCompany(company.id)
   const counts = stageCounts(pipeline)
-  const openCandidate = openMatch ? candidateById(openMatch.candidateId) : undefined
+  const openMatch = pipeline.find((m) => m.id === openMatchId) ?? null
+  const openCandidate = openMatch ? getCandidate(openMatch.candidateId) : undefined
 
   return (
     <>
@@ -122,7 +122,7 @@ export function AdminCompanyDetail() {
           <Card>
             <CardHeader
               title="Candidate pipeline"
-              subtitle={`${pipeline.length} candidates · ${counts.shortlisted + counts.interview} in advanced stages`}
+              subtitle={`${pipeline.length} candidates · ${counts.in_dialogue + counts.negotiation} in advanced stages`}
             />
             <div className="space-y-5 p-5">
               {PIPELINE_STAGES.filter((s) => counts[s.id] > 0).map((stage) => (
@@ -136,11 +136,11 @@ export function AdminCompanyDetail() {
                       .filter((m) => m.stage === stage.id)
                       .sort((a, b) => b.matchScore - a.matchScore)
                       .map((m) => {
-                        const cand = candidateById(m.candidateId)!
+                        const cand = getCandidate(m.candidateId)!
                         return (
                           <button
                             key={m.id}
-                            onClick={() => setOpenMatch(m)}
+                            onClick={() => setOpenMatchId(m.id)}
                             className="group flex w-full items-center gap-3 rounded-xl border border-ink-100 bg-white px-4 py-3 text-left transition hover:border-accent-200 hover:bg-accent-50/40"
                           >
                             <Avatar name={cand.name} color={cand.avatarColor} size="sm" />
@@ -173,7 +173,11 @@ export function AdminCompanyDetail() {
           candidate={openCandidate}
           match={openMatch}
           companyName={company.name}
-          onClose={() => setOpenMatch(null)}
+          editable
+          onSaveCandidate={updateCandidate}
+          onSaveMatch={updateMatch}
+          onMoveStage={(mid, stage) => moveMatch(mid, stage)}
+          onClose={() => setOpenMatchId(null)}
         />
       )}
     </>

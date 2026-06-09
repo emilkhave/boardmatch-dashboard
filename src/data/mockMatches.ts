@@ -8,7 +8,7 @@ export const mockMatches: Match[] = [
     id: 'm-001',
     companyId: 'c-nordlys',
     candidateId: 'p-002', // Thomas Krarup — energy CEO
-    stage: 'shortlisted',
+    stage: 'negotiation',
     matchScore: 96,
     lastContact: '2026-05-28',
     nextStep: 'Final interview with full board on 12 June',
@@ -19,14 +19,14 @@ export const mockMatches: Match[] = [
       { id: 'a2', date: '2026-03-09', type: 'email', text: 'Sent introduction and seat brief.', author: 'Emil' },
       { id: 'a3', date: '2026-03-21', type: 'call', text: 'Intro call — very interested, available from Q3.', author: 'Emil' },
       { id: 'a4', date: '2026-04-15', type: 'meeting', text: 'First interview with Chair (Mette). Positive.', author: 'Mette Sørensen' },
-      { id: 'a5', date: '2026-05-28', type: 'stage_change', text: 'Moved to Shortlisted.', author: 'Emil' },
+      { id: 'a5', date: '2026-05-28', type: 'stage_change', text: 'Moved to Negotiation.', author: 'Emil' },
     ],
   },
   {
     id: 'm-002',
     companyId: 'c-nordlys',
     candidateId: 'p-017', // Astrid Mikkelsen — ESG
-    stage: 'interview',
+    stage: 'in_dialogue',
     matchScore: 91,
     lastContact: '2026-05-22',
     nextStep: 'Schedule second conversation on ESG reporting scope',
@@ -41,7 +41,7 @@ export const mockMatches: Match[] = [
     id: 'm-003',
     companyId: 'c-nordlys',
     candidateId: 'p-001', // Annette Bjerregaard — CFO/IPO
-    stage: 'contacted',
+    stage: 'first_meeting',
     matchScore: 88,
     lastContact: '2026-05-10',
     nextStep: 'Awaiting reply on availability',
@@ -69,7 +69,7 @@ export const mockMatches: Match[] = [
     id: 'm-005',
     companyId: 'c-nordlys',
     candidateId: 'p-013', // Birgit Sandberg
-    stage: 'new',
+    stage: 'interested',
     matchScore: 70,
     lastContact: null,
     nextStep: 'Make first contact',
@@ -80,7 +80,7 @@ export const mockMatches: Match[] = [
     id: 'm-006',
     companyId: 'c-nordlys',
     candidateId: 'p-024', // Magnus Halvorsen
-    stage: 'new',
+    stage: 'interested',
     matchScore: 64,
     lastContact: null,
     nextStep: 'Assess fit vs. infrastructure requirement',
@@ -93,7 +93,7 @@ export const mockMatches: Match[] = [
     id: 'm-010',
     companyId: 'c-saga',
     candidateId: 'p-003', // Dr. Louise Winther
-    stage: 'shortlisted',
+    stage: 'negotiation',
     matchScore: 97,
     lastContact: '2026-05-25',
     nextStep: 'Reference checks, then offer',
@@ -102,14 +102,14 @@ export const mockMatches: Match[] = [
       { id: 'a1', date: '2026-02-10', type: 'created', text: 'Added to pipeline.', author: 'Emil' },
       { id: 'a2', date: '2026-02-28', type: 'meeting', text: 'Met CEO Anders Holm — strong rapport.', author: 'Anders Holm' },
       { id: 'a3', date: '2026-04-12', type: 'meeting', text: 'Scientific deep-dive with R&D team.', author: 'Anders Holm' },
-      { id: 'a4', date: '2026-05-25', type: 'stage_change', text: 'Moved to Shortlisted.', author: 'Emil' },
+      { id: 'a4', date: '2026-05-25', type: 'stage_change', text: 'Moved to Negotiation.', author: 'Emil' },
     ],
   },
   {
     id: 'm-011',
     companyId: 'c-saga',
     candidateId: 'p-023', // Charlotte Engel — IR/IPO
-    stage: 'interview',
+    stage: 'in_dialogue',
     matchScore: 84,
     lastContact: '2026-05-18',
     nextStep: 'Second interview with CFO',
@@ -137,7 +137,7 @@ export const mockMatches: Match[] = [
     id: 'm-013',
     companyId: 'c-saga',
     candidateId: 'p-019', // Nadia Rahman — corporate law
-    stage: 'contacted',
+    stage: 'first_meeting',
     matchScore: 72,
     lastContact: '2026-05-15',
     nextStep: 'Follow up next week',
@@ -151,7 +151,7 @@ export const mockMatches: Match[] = [
     id: 'm-014',
     companyId: 'c-saga',
     candidateId: 'p-007', // Sara El-Amin
-    stage: 'new',
+    stage: 'interested',
     matchScore: 58,
     lastContact: null,
     nextStep: 'Evaluate data/AI angle for digital biomarkers',
@@ -164,7 +164,7 @@ export const mockMatches: Match[] = [
     id: 'm-020',
     companyId: 'c-fjordbank',
     candidateId: 'p-015', // Marianne Vestergaard
-    stage: 'accepted',
+    stage: 'signed',
     matchScore: 95,
     lastContact: '2026-05-20',
     nextStep: 'Onboarding & committee induction',
@@ -180,7 +180,7 @@ export const mockMatches: Match[] = [
     id: 'm-021',
     companyId: 'c-fjordbank',
     candidateId: 'p-006', // Erik Lindqvist — CRO
-    stage: 'interview',
+    stage: 'in_dialogue',
     matchScore: 90,
     lastContact: '2026-05-24',
     nextStep: 'Second-round interview',
@@ -194,7 +194,7 @@ export const mockMatches: Match[] = [
     id: 'm-022',
     companyId: 'c-fjordbank',
     candidateId: 'p-026', // Johan Eklund — cyber
-    stage: 'contacted',
+    stage: 'first_meeting',
     matchScore: 81,
     lastContact: '2026-05-12',
     nextStep: 'Gauge interest in risk committee',
@@ -222,7 +222,7 @@ export const mockMatches: Match[] = [
     id: 'm-024',
     companyId: 'c-fjordbank',
     candidateId: 'p-001', // Annette Bjerregaard
-    stage: 'new',
+    stage: 'interested',
     matchScore: 73,
     lastContact: null,
     nextStep: 'Assess vs. Nordlys overlap',
@@ -235,7 +235,7 @@ export const mockMatches: Match[] = [
     id: 'm-030',
     companyId: 'c-velora',
     candidateId: 'p-005', // Camilla Holst — CMO
-    stage: 'shortlisted',
+    stage: 'negotiation',
     matchScore: 94,
     lastContact: '2026-05-26',
     nextStep: 'Meet remaining board members',
@@ -244,14 +244,14 @@ export const mockMatches: Match[] = [
       { id: 'a1', date: '2026-03-01', type: 'created', text: 'Added to pipeline.', author: 'Emil' },
       { id: 'a2', date: '2026-03-20', type: 'call', text: 'Intro call — available immediately.', author: 'Emil' },
       { id: 'a3', date: '2026-04-25', type: 'meeting', text: 'Interview with Chair.', author: 'Karin Bergström' },
-      { id: 'a4', date: '2026-05-26', type: 'stage_change', text: 'Moved to Shortlisted.', author: 'Emil' },
+      { id: 'a4', date: '2026-05-26', type: 'stage_change', text: 'Moved to Negotiation.', author: 'Emil' },
     ],
   },
   {
     id: 'm-031',
     companyId: 'c-velora',
     candidateId: 'p-014', // Patrick Nguyen — CDO
-    stage: 'interview',
+    stage: 'in_dialogue',
     matchScore: 89,
     lastContact: '2026-05-21',
     nextStep: 'Second interview on e-commerce roadmap',
@@ -265,7 +265,7 @@ export const mockMatches: Match[] = [
     id: 'm-032',
     companyId: 'c-velora',
     candidateId: 'p-025', // Ida Lindberg — brand/growth
-    stage: 'contacted',
+    stage: 'first_meeting',
     matchScore: 80,
     lastContact: '2026-05-14',
     nextStep: 'Await response',
@@ -293,7 +293,7 @@ export const mockMatches: Match[] = [
     id: 'm-034',
     companyId: 'c-velora',
     candidateId: 'p-021', // Line Kjær — CHRO
-    stage: 'new',
+    stage: 'interested',
     matchScore: 66,
     lastContact: null,
     nextStep: 'First contact',
@@ -306,7 +306,7 @@ export const mockMatches: Match[] = [
     id: 'm-040',
     companyId: 'c-helix',
     candidateId: 'p-004', // Michael Strand — PE partner
-    stage: 'interview',
+    stage: 'in_dialogue',
     matchScore: 93,
     lastContact: '2026-05-27',
     nextStep: 'Chair interview with CEO and lead investor',
@@ -335,7 +335,7 @@ export const mockMatches: Match[] = [
     id: 'm-042',
     companyId: 'c-helix',
     candidateId: 'p-020', // Gustav Lindholm — operating partner
-    stage: 'contacted',
+    stage: 'first_meeting',
     matchScore: 83,
     lastContact: '2026-05-11',
     nextStep: 'Confirm bandwidth (already on 5 boards)',
@@ -349,7 +349,7 @@ export const mockMatches: Match[] = [
     id: 'm-043',
     companyId: 'c-helix',
     candidateId: 'p-026', // Johan Eklund — cyber
-    stage: 'new',
+    stage: 'interested',
     matchScore: 71,
     lastContact: null,
     nextStep: 'First contact',
@@ -360,7 +360,7 @@ export const mockMatches: Match[] = [
     id: 'm-044',
     companyId: 'c-helix',
     candidateId: 'p-007', // Sara El-Amin
-    stage: 'new',
+    stage: 'interested',
     matchScore: 75,
     lastContact: null,
     nextStep: 'Assess for technology committee',
@@ -373,7 +373,7 @@ export const mockMatches: Match[] = [
     id: 'm-050',
     companyId: 'c-lumen',
     candidateId: 'p-009', // Prof. Hanne Mølgaard
-    stage: 'interview',
+    stage: 'in_dialogue',
     matchScore: 92,
     lastContact: '2026-05-23',
     nextStep: 'Discuss advisory-board scope',
@@ -401,7 +401,7 @@ export const mockMatches: Match[] = [
     id: 'm-052',
     companyId: 'c-lumen',
     candidateId: 'p-003', // Dr. Louise Winther
-    stage: 'new',
+    stage: 'interested',
     matchScore: 78,
     lastContact: null,
     nextStep: 'Coordinate with Saga approach',
@@ -414,7 +414,7 @@ export const mockMatches: Match[] = [
     id: 'm-060',
     companyId: 'c-borg',
     candidateId: 'p-010', // Frederik Aagaard
-    stage: 'shortlisted',
+    stage: 'negotiation',
     matchScore: 95,
     lastContact: '2026-05-29',
     nextStep: 'Owner (Birgitte) to confirm offer',
@@ -422,14 +422,14 @@ export const mockMatches: Match[] = [
     history: [
       { id: 'a1', date: '2026-02-05', type: 'created', text: 'Added to pipeline.', author: 'Emil' },
       { id: 'a2', date: '2026-03-15', type: 'meeting', text: 'Met owner Birgitte Borg.', author: 'Birgitte Borg' },
-      { id: 'a3', date: '2026-05-29', type: 'stage_change', text: 'Moved to Shortlisted.', author: 'Emil' },
+      { id: 'a3', date: '2026-05-29', type: 'stage_change', text: 'Moved to Negotiation.', author: 'Emil' },
     ],
   },
   {
     id: 'm-061',
     companyId: 'c-borg',
     candidateId: 'p-018', // Søren Bach
-    stage: 'interview',
+    stage: 'in_dialogue',
     matchScore: 88,
     lastContact: '2026-05-20',
     nextStep: 'Second meeting',
@@ -443,7 +443,7 @@ export const mockMatches: Match[] = [
     id: 'm-062',
     companyId: 'c-borg',
     candidateId: 'p-013', // Birgit Sandberg
-    stage: 'contacted',
+    stage: 'first_meeting',
     matchScore: 82,
     lastContact: '2026-05-13',
     nextStep: 'Follow up',
@@ -473,7 +473,7 @@ export const mockMatches: Match[] = [
     id: 'm-071',
     companyId: 'c-greenfield',
     candidateId: 'p-018', // Søren Bach
-    stage: 'contacted',
+    stage: 'first_meeting',
     matchScore: 79,
     lastContact: '2026-05-09',
     nextStep: 'Await reply',
@@ -487,7 +487,7 @@ export const mockMatches: Match[] = [
     id: 'm-072',
     companyId: 'c-greenfield',
     candidateId: 'p-022', // Dr. Peter Lindgren
-    stage: 'new',
+    stage: 'interested',
     matchScore: 68,
     lastContact: null,
     nextStep: 'Assess VC fit',
@@ -500,7 +500,7 @@ export const mockMatches: Match[] = [
     id: 'm-080',
     companyId: 'c-tivolio',
     candidateId: 'p-011', // Julie Toft
-    stage: 'accepted',
+    stage: 'signed',
     matchScore: 96,
     lastContact: '2026-04-30',
     nextStep: 'Seated — first board meeting held',
@@ -516,7 +516,7 @@ export const mockMatches: Match[] = [
     id: 'm-081',
     companyId: 'c-tivolio',
     candidateId: 'p-025', // Ida Lindberg
-    stage: 'rejected',
+    stage: 'not_relevant',
     matchScore: 81,
     lastContact: '2026-02-20',
     nextStep: null,

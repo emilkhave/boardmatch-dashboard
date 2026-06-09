@@ -2,21 +2,20 @@ import { useMemo, useState } from 'react'
 import { PageHeader } from '../../components/AdminLayout'
 import { Avatar, Tag } from '../../components/ui'
 import { CandidateDetail } from '../../components/CandidateDetail'
-import { mockCandidates } from '../../data/mockCandidates'
-import { matchesForCandidate } from '../../data/mockMatches'
+import { useData } from '../../lib/store'
 import { IconSearch, IconPin } from '../../components/icons'
-import type { Candidate } from '../../types'
 
 const availabilityFilters = ['All', 'Available', 'Open to offers', 'Limited'] as const
 
 export function AdminCandidates() {
+  const { candidates, matchesForCandidate, getCandidate, updateCandidate } = useData()
   const [query, setQuery] = useState('')
   const [avail, setAvail] = useState<(typeof availabilityFilters)[number]>('All')
-  const [open, setOpen] = useState<Candidate | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase()
-    return mockCandidates.filter((c) => {
+    return candidates.filter((c) => {
       const matchesAvail = avail === 'All' || c.availability === avail
       const matchesQuery =
         !q ||
@@ -26,13 +25,15 @@ export function AdminCandidates() {
         c.sectors.some((s) => s.toLowerCase().includes(q))
       return matchesAvail && matchesQuery
     })
-  }, [query, avail])
+  }, [query, avail, candidates])
+
+  const open = openId ? getCandidate(openId) : undefined
 
   return (
     <>
       <PageHeader
         title="Candidates"
-        subtitle={`${mockCandidates.length} board members in your network`}
+        subtitle={`${candidates.length} board members in your network`}
       />
 
       <div className="space-y-5 px-6 py-6 lg:px-8">
@@ -73,7 +74,7 @@ export function AdminCandidates() {
             return (
               <button
                 key={c.id}
-                onClick={() => setOpen(c)}
+                onClick={() => setOpenId(c.id)}
                 className="card group flex flex-col p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft"
               >
                 <div className="flex items-start gap-3">
@@ -122,7 +123,14 @@ export function AdminCandidates() {
         )}
       </div>
 
-      {open && <CandidateDetail candidate={open} onClose={() => setOpen(null)} />}
+      {open && (
+        <CandidateDetail
+          candidate={open}
+          editable
+          onSaveCandidate={updateCandidate}
+          onClose={() => setOpenId(null)}
+        />
+      )}
     </>
   )
 }

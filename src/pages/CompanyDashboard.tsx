@@ -1,33 +1,32 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { useData } from '../lib/store'
 import { companyById } from '../data/mockCompanies'
-import { matchesForCompany } from '../data/mockMatches'
-import { candidateById } from '../data/mockCandidates'
 import { Avatar, Tag } from '../components/ui'
 import { ScorePill } from '../components/StageBadge'
 import { StatCard } from '../components/StatCard'
 import { CandidateDetail } from '../components/CandidateDetail'
-import { ACTIVE_STAGES, PIPELINE_STAGES, type Match, type PipelineStage } from '../types'
+import { ACTIVE_STAGES, PIPELINE_STAGES, type Candidate, type Match, type PipelineStage } from '../types'
 import { stageStyles, stageCounts } from '../lib/pipeline'
 import { relativeDays, daysSince } from '../lib/format'
-import {
-  IconLogout,
-  IconUsers,
-  IconStar,
-  IconClock,
-  IconCheck,
-} from '../components/icons'
+import { IconLogout, IconUsers, IconStar, IconClock, IconCheck } from '../components/icons'
+
+// Stages that still need active follow-up (excludes the terminal columns).
+const FOLLOW_UP_STAGES: PipelineStage[] = ['interested', 'first_meeting', 'in_dialogue', 'negotiation']
 
 export function CompanyDashboard() {
   const { session, logout } = useAuth()
   const navigate = useNavigate()
-  const [openMatch, setOpenMatch] = useState<Match | null>(null)
+  const { matchesForCompany, getCandidate, moveMatch, updateMatch, updateCandidate } = useData()
+
+  const [openMatchId, setOpenMatchId] = useState<string | null>(null)
+  const [dragStage, setDragStage] = useState<PipelineStage | null>(null)
 
   const company = session?.companyId ? companyById(session.companyId) : undefined
   const pipeline = useMemo(
     () => (company ? matchesForCompany(company.id) : []),
-    [company],
+    [company, matchesForCompany],
   )
   const counts = stageCounts(pipeline)
 
@@ -44,21 +43,26 @@ export function CompanyDashboard() {
     navigate('/login')
   }
 
-  const accepted = pipeline.filter((m) => m.stage === 'accepted')
-  const rejected = pipeline.filter((m) => m.stage === 'rejected')
-  const openCandidate = openMatch ? candidateById(openMatch.candidateId) : undefined
+  const openMatch = pipeline.find((m) => m.id === openMatchId) ?? null
+  const openCandidate = openMatch ? getCandidate(openMatch.candidateId) : undefined
 
-  // Candidates needing follow-up: active stage, last contact > 14 days ago.
   const needsFollowUp = pipeline.filter((m) => {
     const d = daysSince(m.lastContact)
-    return ACTIVE_STAGES.includes(m.stage) && (d === null || d > 14)
+    return FOLLOW_UP_STAGES.includes(m.stage) && (d === null || d > 14)
   }).length
+
+  const handleDrop = (stage: PipelineStage) => (e: React.DragEvent) => {
+    e.preventDefault()
+    const id = e.dataTransfer.getData('text/plain')
+    if (id) moveMatch(id, stage, session?.name ?? 'Company')
+    setDragStage(null)
+  }
 
   return (
     <div className="min-h-screen bg-sand-100">
       {/* ── Top bar ──────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 border-b border-ink-200/60 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-5 py-3 lg:px-8">
+        <div className="mx-auto flex max-w-[1500px] items-center gap-3 px-5 py-3 lg:px-8">
           <Avatar name={company.name} color={company.logoColor} size="md" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-ink-900">{company.name}</p>
@@ -79,38 +83,11 @@ export function CompanyDashboard() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1400px] space-y-6 px-5 py-6 lg:px-8">
-        {/* Seat banner */}
+      <div className="mx-auto max-w-[1500px] space-y-6 px-5 py-6 lg:px-8">
+        {/* Seat banner — kept intentionally clean */}
         <div className="overflow-hidden rounded-2xl bg-accent-800 p-6 text-white shadow-soft">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-accent-200">
-                Recruiting for
-              </p>
-              <h1 className="mt-1 font-display text-2xl font-semibold">{company.seatTitle}</h1>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="rounded-lg bg-white/15 px-2.5 py-1 text-xs font-medium">
-                  {company.seatType}
-                </span>
-                <span className="rounded-lg bg-white/15 px-2.5 py-1 text-xs font-medium">
-                  {company.compensation}
-                </span>
-                <span className="rounded-lg bg-white/15 px-2.5 py-1 text-xs font-medium">
-                  {company.seatsOpen} seat{company.seatsOpen > 1 ? 's' : ''} open
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-1.5 sm:max-w-xs sm:justify-end">
-              {company.requiredCompetencies.map((rc) => (
-                <span
-                  key={rc}
-                  className="rounded-lg border border-white/20 px-2.5 py-1 text-xs text-accent-50"
-                >
-                  {rc}
-                </span>
-              ))}
-            </div>
-          </div>
+          <p className="text-xs font-medium uppercase tracking-wide text-accent-200">Recruiting for</p>
+          <h1 className="mt-1 font-display text-2xl font-semibold">{company.seatTitle}</h1>
         </div>
 
         {/* Stats */}
@@ -122,8 +99,8 @@ export function CompanyDashboard() {
           />
           <StatCard
             label="In advanced stages"
-            value={counts.interview + counts.shortlisted}
-            hint="Interview & shortlisted"
+            value={counts.in_dialogue + counts.negotiation}
+            hint="In dialogue & negotiation"
             icon={<IconStar width={18} height={18} />}
           />
           <StatCard
@@ -133,8 +110,8 @@ export function CompanyDashboard() {
             icon={<IconClock width={18} height={18} />}
           />
           <StatCard
-            label="Placed"
-            value={counts.accepted}
+            label="Signed"
+            value={counts.signed}
             hint="Seat accepted"
             icon={<IconCheck width={18} height={18} />}
           />
@@ -144,9 +121,11 @@ export function CompanyDashboard() {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-ink-900">Candidate pipeline</h2>
-            <p className="text-xs text-ink-400">Click a candidate to view their full profile</p>
+            <p className="text-xs text-ink-400">
+              Drag candidates between columns · click to view &amp; edit
+            </p>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {ACTIVE_STAGES.map((stage) => (
               <PipelineColumn
                 key={stage}
@@ -154,55 +133,30 @@ export function CompanyDashboard() {
                 matches={pipeline
                   .filter((m) => m.stage === stage)
                   .sort((a, b) => b.matchScore - a.matchScore)}
-                onOpen={setOpenMatch}
+                getCandidateName={(id) => getCandidate(id)}
+                isDropTarget={dragStage === stage}
+                onOpen={setOpenMatchId}
+                onDragOverColumn={(e) => {
+                  e.preventDefault()
+                  if (dragStage !== stage) setDragStage(stage)
+                }}
+                onDragLeaveColumn={() => setDragStage((s) => (s === stage ? null : s))}
+                onDrop={handleDrop(stage)}
               />
             ))}
           </div>
         </div>
-
-        {/* Decided */}
-        {(accepted.length > 0 || rejected.length > 0) && (
-          <div>
-            <h2 className="mb-3 text-sm font-semibold text-ink-900">Decided</h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {[...accepted, ...rejected].map((m) => {
-                const cand = candidateById(m.candidateId)!
-                const accepted = m.stage === 'accepted'
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => setOpenMatch(m)}
-                    className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left transition hover:shadow-soft ${
-                      accepted ? 'border-emerald-200' : 'border-ink-100'
-                    }`}
-                  >
-                    <Avatar name={cand.name} color={cand.avatarColor} size="md" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-ink-900">{cand.name}</p>
-                      <p className="truncate text-xs text-ink-400">{cand.title}</p>
-                    </div>
-                    <span
-                      className={`rounded-lg px-2.5 py-1 text-xs font-medium ${
-                        accepted
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-rose-50 text-rose-600'
-                      }`}
-                    >
-                      {accepted ? 'Accepted' : 'Not selected'}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
       </div>
 
       {openMatch && openCandidate && (
         <CandidateDetail
           candidate={openCandidate}
           match={openMatch}
-          onClose={() => setOpenMatch(null)}
+          editable
+          onSaveCandidate={updateCandidate}
+          onSaveMatch={updateMatch}
+          onMoveStage={(id, stage) => moveMatch(id, stage, session?.name ?? 'Company')}
+          onClose={() => setOpenMatchId(null)}
         />
       )}
     </div>
@@ -212,16 +166,33 @@ export function CompanyDashboard() {
 function PipelineColumn({
   stage,
   matches,
+  getCandidateName,
+  isDropTarget,
   onOpen,
+  onDragOverColumn,
+  onDragLeaveColumn,
+  onDrop,
 }: {
   stage: PipelineStage
   matches: Match[]
-  onOpen: (m: Match) => void
+  getCandidateName: (id: string) => Candidate | undefined
+  isDropTarget: boolean
+  onOpen: (id: string) => void
+  onDragOverColumn: (e: React.DragEvent) => void
+  onDragLeaveColumn: () => void
+  onDrop: (e: React.DragEvent) => void
 }) {
   const meta = PIPELINE_STAGES.find((s) => s.id === stage)!
   const s = stageStyles[stage]
   return (
-    <div className="flex flex-col rounded-2xl bg-sand-50 ring-1 ring-ink-200/50">
+    <div
+      onDragOver={onDragOverColumn}
+      onDragLeave={onDragLeaveColumn}
+      onDrop={onDrop}
+      className={`flex flex-col rounded-2xl ring-1 transition-colors ${
+        isDropTarget ? 'bg-accent-50 ring-2 ring-accent-400' : 'bg-sand-50 ring-ink-200/50'
+      }`}
+    >
       <div className="flex items-center justify-between px-3.5 py-3">
         <div className="flex items-center gap-2">
           <span className={`h-2 w-2 rounded-full ${s.dot}`} />
@@ -233,12 +204,26 @@ function PipelineColumn({
       </div>
       <div className="flex flex-1 flex-col gap-2.5 px-2.5 pb-3">
         {matches.map((m) => {
-          const cand = candidateById(m.candidateId)!
+          const cand = getCandidateName(m.candidateId)
+          if (!cand) return null
           return (
-            <button
+            <div
               key={m.id}
-              onClick={() => onOpen(m)}
-              className="group rounded-xl border border-ink-100 bg-white p-3 text-left shadow-card transition-all duration-150 hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-soft"
+              role="button"
+              tabIndex={0}
+              draggable
+              onClick={() => onOpen(m.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onOpen(m.id)
+                }
+              }}
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', m.id)
+                e.dataTransfer.effectAllowed = 'move'
+              }}
+              className="group cursor-grab rounded-xl border border-ink-100 bg-white p-3 text-left shadow-card transition-all duration-150 hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-soft active:cursor-grabbing"
             >
               <div className="flex items-start gap-2.5">
                 <Avatar name={cand.name} color={cand.avatarColor} size="sm" />
@@ -259,12 +244,12 @@ function PipelineColumn({
                 </span>
                 <ScorePill score={m.matchScore} />
               </div>
-            </button>
+            </div>
           )
         })}
         {matches.length === 0 && (
           <div className="flex items-center justify-center rounded-xl border border-dashed border-ink-200 py-6 text-xs text-ink-300">
-            Empty
+            Drop here
           </div>
         )}
       </div>

@@ -5,31 +5,30 @@
 // ---------------------------------------------------------------------------
 
 export type PipelineStage =
-  | 'new'
   | 'interested'
-  | 'contacted'
-  | 'interview'
-  | 'shortlisted'
-  | 'accepted'
-  | 'rejected'
+  | 'first_meeting'
+  | 'in_dialogue'
+  | 'negotiation'
+  | 'signed'
+  | 'not_relevant'
 
 export const PIPELINE_STAGES: { id: PipelineStage; label: string; short: string }[] = [
-  { id: 'new', label: 'New candidates', short: 'New' },
   { id: 'interested', label: 'Interested', short: 'Interested' },
-  { id: 'contacted', label: 'Contacted', short: 'Contacted' },
-  { id: 'interview', label: 'Interview / dialogue', short: 'Interview' },
-  { id: 'shortlisted', label: 'Shortlisted', short: 'Shortlisted' },
-  { id: 'accepted', label: 'Accepted', short: 'Accepted' },
-  { id: 'rejected', label: 'Rejected', short: 'Rejected' },
+  { id: 'first_meeting', label: 'First meeting', short: 'First meeting' },
+  { id: 'in_dialogue', label: 'In dialogue', short: 'In dialogue' },
+  { id: 'negotiation', label: 'Negotiation / contract', short: 'Negotiation' },
+  { id: 'signed', label: 'Signed', short: 'Signed' },
+  { id: 'not_relevant', label: 'Not relevant', short: 'Not relevant' },
 ]
 
-// Stages shown as columns in the company kanban (accepted/rejected handled separately)
+// All six stages are shown as columns in the company kanban board.
 export const ACTIVE_STAGES: PipelineStage[] = [
-  'new',
   'interested',
-  'contacted',
-  'interview',
-  'shortlisted',
+  'first_meeting',
+  'in_dialogue',
+  'negotiation',
+  'signed',
+  'not_relevant',
 ]
 
 export interface Company {

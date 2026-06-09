@@ -3,27 +3,27 @@ import { PageHeader } from '../../components/AdminLayout'
 import { Avatar } from '../../components/ui'
 import { StageBadge, ScorePill } from '../../components/StageBadge'
 import { CandidateDetail } from '../../components/CandidateDetail'
-import { mockMatches } from '../../data/mockMatches'
-import { candidateById } from '../../data/mockCandidates'
+import { useData } from '../../lib/store'
 import { companyById } from '../../data/mockCompanies'
-import { PIPELINE_STAGES, type Match, type PipelineStage } from '../../types'
+import { PIPELINE_STAGES, type PipelineStage } from '../../types'
 import { stageCounts, stageStyles } from '../../lib/pipeline'
 import { relativeDays, daysSince } from '../../lib/format'
 import { IconSearch } from '../../components/icons'
 
 export function AdminMatches() {
+  const { matches, getCandidate, moveMatch, updateMatch, updateCandidate } = useData()
   const [stageFilter, setStageFilter] = useState<PipelineStage | 'all'>('all')
   const [query, setQuery] = useState('')
-  const [open, setOpen] = useState<Match | null>(null)
+  const [openMatchId, setOpenMatchId] = useState<string | null>(null)
 
-  const counts = useMemo(() => stageCounts(mockMatches), [])
+  const counts = useMemo(() => stageCounts(matches), [matches])
 
   const rows = useMemo(() => {
     const q = query.toLowerCase()
-    return mockMatches
+    return matches
       .map((m) => ({
         match: m,
-        candidate: candidateById(m.candidateId)!,
+        candidate: getCandidate(m.candidateId)!,
         company: companyById(m.companyId)!,
       }))
       .filter(({ match, candidate, company }) => {
@@ -35,9 +35,10 @@ export function AdminMatches() {
         return matchesStage && matchesQuery
       })
       .sort((a, b) => b.match.matchScore - a.match.matchScore)
-  }, [stageFilter, query])
+  }, [stageFilter, query, matches, getCandidate])
 
-  const openCandidate = open ? candidateById(open.candidateId) : undefined
+  const open = matches.find((m) => m.id === openMatchId) ?? null
+  const openCandidate = open ? getCandidate(open.candidateId) : undefined
   const openCompany = open ? companyById(open.companyId) : undefined
 
   return (
@@ -57,7 +58,7 @@ export function AdminMatches() {
             }`}
           >
             <span className="text-xs text-ink-500">All</span>
-            <span className="mt-1 text-xl font-semibold text-ink-900">{mockMatches.length}</span>
+            <span className="mt-1 text-xl font-semibold text-ink-900">{matches.length}</span>
           </button>
           {PIPELINE_STAGES.map((s) => (
             <button
@@ -111,7 +112,7 @@ export function AdminMatches() {
                   return (
                     <tr
                       key={match.id}
-                      onClick={() => setOpen(match)}
+                      onClick={() => setOpenMatchId(match.id)}
                       className="cursor-pointer transition hover:bg-sand-50"
                     >
                       <td className="px-5 py-3">
@@ -158,7 +159,11 @@ export function AdminMatches() {
           candidate={openCandidate}
           match={open}
           companyName={openCompany?.name}
-          onClose={() => setOpen(null)}
+          editable
+          onSaveCandidate={updateCandidate}
+          onSaveMatch={updateMatch}
+          onMoveStage={(mid, stage) => moveMatch(mid, stage)}
+          onClose={() => setOpenMatchId(null)}
         />
       )}
     </>

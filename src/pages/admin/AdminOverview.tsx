@@ -5,8 +5,7 @@ import { StatCard } from '../../components/StatCard'
 import { Card, CardHeader, Avatar } from '../../components/ui'
 import { StageBadge, ScorePill } from '../../components/StageBadge'
 import { mockCompanies } from '../../data/mockCompanies'
-import { mockCandidates } from '../../data/mockCandidates'
-import { mockMatches, matchesForCompany } from '../../data/mockMatches'
+import { useData } from '../../lib/store'
 import { PIPELINE_STAGES } from '../../types'
 import { stageStyles, recentActivity, stageCounts } from '../../lib/pipeline'
 import { relativeDays } from '../../lib/format'
@@ -20,23 +19,22 @@ import {
 } from '../../components/icons'
 
 export function AdminOverview() {
-  const counts = useMemo(() => stageCounts(mockMatches), [])
-  const activity = useMemo(() => recentActivity(8), [])
+  const { matches, candidates, getCandidate, matchesForCompany } = useData()
+  const counts = useMemo(() => stageCounts(matches), [matches])
+  const activity = useMemo(() => recentActivity(matches, getCandidate, 8), [matches, getCandidate])
 
   const activeCompanies = mockCompanies.filter((c) => c.status === 'active').length
-  const placements = mockMatches.filter((m) => m.stage === 'accepted').length
-  const inProgress = mockMatches.filter(
-    (m) => !['accepted', 'rejected', 'new'].includes(m.stage),
+  const placements = matches.filter((m) => m.stage === 'signed').length
+  const inProgress = matches.filter(
+    (m) => !['signed', 'not_relevant'].includes(m.stage),
   ).length
-  const avgScore = Math.round(
-    mockMatches.reduce((s, m) => s + m.matchScore, 0) / mockMatches.length,
-  )
+  const avgScore = Math.round(matches.reduce((s, m) => s + m.matchScore, 0) / matches.length)
 
   const maxStage = Math.max(...PIPELINE_STAGES.map((s) => counts[s.id]), 1)
 
   // Hottest matches — the strongest fits still in progress.
-  const hotMatches = [...mockMatches]
-    .filter((m) => !['accepted', 'rejected'].includes(m.stage))
+  const hotMatches = [...matches]
+    .filter((m) => !['signed', 'not_relevant'].includes(m.stage))
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, 5)
 
@@ -65,7 +63,7 @@ export function AdminOverview() {
           />
           <StatCard
             label="Candidates in network"
-            value={mockCandidates.length}
+            value={candidates.length}
             hint="Across 8 sectors"
             icon={<IconUsers width={18} height={18} />}
           />
@@ -151,7 +149,7 @@ export function AdminOverview() {
             />
             <div className="divide-y divide-ink-100">
               {hotMatches.map((m) => {
-                const cand = mockCandidates.find((c) => c.id === m.candidateId)!
+                const cand = getCandidate(m.candidateId)!
                 const comp = mockCompanies.find((c) => c.id === m.companyId)!
                 return (
                   <div key={m.id} className="flex items-center gap-3 px-5 py-3.5">

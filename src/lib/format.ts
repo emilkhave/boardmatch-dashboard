@@ -2,6 +2,7 @@
 // prototype) so the data always feels current during a demo.
 
 export const TODAY = new Date('2026-06-04')
+export const TODAY_ISO = '2026-06-04'
 
 export function initials(name: string): string {
   const parts = name.replace(/^(Dr\.|Professor|Prof\.)\s+/i, '').trim().split(/\s+/)
