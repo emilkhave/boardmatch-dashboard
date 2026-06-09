@@ -29,18 +29,20 @@ export default {
           900: '#1c2128',
           950: '#12161b',
         },
-        // Muted Nordic teal accent
+        // Accent palette is driven by CSS variables (see :root in index.css), so the
+        // company dashboard can be re-themed to each company's brand color at runtime.
+        // Defaults to the muted Nordic teal.
         accent: {
-          50: '#eef6f4',
-          100: '#d6ebe6',
-          200: '#aed7ce',
-          300: '#7fbcb0',
-          400: '#549b8e',
-          500: '#3a8073',
-          600: '#2d675c',
-          700: '#27534b',
-          800: '#21433d',
-          900: '#1c3833',
+          50: 'rgb(var(--accent-50) / <alpha-value>)',
+          100: 'rgb(var(--accent-100) / <alpha-value>)',
+          200: 'rgb(var(--accent-200) / <alpha-value>)',
+          300: 'rgb(var(--accent-300) / <alpha-value>)',
+          400: 'rgb(var(--accent-400) / <alpha-value>)',
+          500: 'rgb(var(--accent-500) / <alpha-value>)',
+          600: 'rgb(var(--accent-600) / <alpha-value>)',
+          700: 'rgb(var(--accent-700) / <alpha-value>)',
+          800: 'rgb(var(--accent-800) / <alpha-value>)',
+          900: 'rgb(var(--accent-900) / <alpha-value>)',
         },
       },
       boxShadow: {

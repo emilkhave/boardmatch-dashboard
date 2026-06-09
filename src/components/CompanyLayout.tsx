@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useData } from '../lib/store'
 import { Avatar } from './ui'
+import { brandThemeVars, logoCandidates, domainFromWebsite } from '../lib/brand'
 import { IconLogout, IconFlow, IconSettings } from './icons'
 
 export function CompanyLayout() {
@@ -29,11 +30,16 @@ export function CompanyLayout() {
     { to: '/company/settings', label: 'Settings', icon: IconSettings, end: false },
   ]
 
+  // Theme the whole dashboard in the company's brand color + logo.
+  const themeVars = brandThemeVars(company.brandColor ?? company.logoColor)
+  const domain = domainFromWebsite(company.website)
+  const logoSrcs = company.logoUrl ? [company.logoUrl] : domain ? logoCandidates(domain) : []
+
   return (
-    <div className="min-h-screen bg-sand-100">
+    <div className="min-h-screen bg-sand-100" style={themeVars}>
       <header className="sticky top-0 z-30 border-b border-ink-200/60 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-[1500px] items-center gap-3 px-5 py-3 lg:px-8">
-          <Avatar name={company.name} color={company.logoColor} size="md" />
+          <Avatar name={company.name} color={company.logoColor} size="md" srcs={logoSrcs} />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-ink-900">{company.name}</p>
             <p className="truncate text-xs text-ink-400">Board recruitment workspace</p>

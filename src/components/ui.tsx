@@ -1,15 +1,18 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { initials } from '../lib/format'
 
-// ── Avatar / monogram ──────────────────────────────────────────────────────
+// ── Avatar / monogram (with optional logo image) ───────────────────────────
 export function Avatar({
   name,
   color,
   size = 'md',
+  srcs,
 }: {
   name: string
   color: string
   size?: 'sm' | 'md' | 'lg' | 'xl'
+  /** Logo image URLs, tried in order; falls back to the monogram if all fail. */
+  srcs?: string[]
 }) {
   const dims = {
     sm: 'h-8 w-8 text-xs',
@@ -17,12 +20,29 @@ export function Avatar({
     lg: 'h-12 w-12 text-base',
     xl: 'h-16 w-16 text-xl',
   }[size]
+
+  const list = (srcs ?? []).filter(Boolean)
+  const [idx, setIdx] = useState(0)
+  // Reset when the source list changes (e.g. after editing the website).
+  useEffect(() => setIdx(0), [list.join('|')])
+
+  const showImage = list.length > 0 && idx < list.length
+
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white ${dims}`}
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold text-white ${dims}`}
       style={{ backgroundColor: color }}
     >
-      {initials(name)}
+      {showImage ? (
+        <img
+          src={list[idx]}
+          alt={name}
+          className="h-full w-full bg-white object-contain"
+          onError={() => setIdx((i) => i + 1)}
+        />
+      ) : (
+        initials(name)
+      )}
     </span>
   )
 }

@@ -35,6 +35,8 @@ export interface Company {
   id: string
   name: string
   logoColor: string // hex for monogram avatar background
+  brandColor?: string // hex — themes the whole company dashboard (defaults to logoColor)
+  logoUrl?: string // auto-resolved company logo (from website domain)
   industry: string
   location: string
   size: string // employee band

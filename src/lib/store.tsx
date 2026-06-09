@@ -40,6 +40,8 @@ interface DataContextValue {
   updateMatch: (matchId: string, patch: Partial<Match>) => void
   updateCandidate: (candidateId: string, patch: Partial<Candidate>) => void
   updateCompany: (companyId: string, patch: Partial<Company>) => void
+  /** Create a new company (self-service sign-up). Returns the new id. */
+  addCompany: (input: CompanyInput) => string
   /** Register candidate interest (landing page / Zoho) → adds them to the pipeline. */
   addInterest: (input: InterestInput) => { candidateId: string; matchId: string; isNew: boolean }
   resetData: () => void
@@ -102,6 +104,48 @@ export interface InterestInput {
   competencies?: string[]
   message?: string
   source?: 'landing' | 'zoho'
+}
+
+// Input for self-service company sign-up.
+export interface CompanyInput {
+  name: string
+  website?: string
+  industry?: string
+  location?: string
+  seatTitle?: string
+  contactName: string
+  contactRole?: string
+  contactEmail: string
+  brandColor?: string
+  logoUrl?: string
+}
+
+function buildCompany(input: CompanyInput): Company {
+  const brand = input.brandColor || pickColor(input.name)
+  return {
+    id: newId('c'),
+    name: input.name.trim(),
+    logoColor: brand,
+    brandColor: brand,
+    logoUrl: input.logoUrl,
+    industry: input.industry?.trim() || 'Not specified',
+    location: input.location?.trim() || '—',
+    size: '—',
+    revenue: '—',
+    founded: new Date().getFullYear(),
+    website: input.website?.trim() || '',
+    description: 'Company profile to be completed in Settings.',
+    seatTitle: input.seatTitle?.trim() || 'Board Member',
+    seatType: 'Board Member',
+    seatsOpen: 1,
+    compensation: '—',
+    requiredCompetencies: [],
+    contactName: input.contactName.trim(),
+    contactRole: input.contactRole?.trim() || 'Primary contact',
+    contactEmail: input.contactEmail.trim(),
+    status: 'active',
+    createdAt: TODAY_ISO,
+  }
 }
 
 function buildCandidate(input: InterestInput): Candidate {
@@ -196,6 +240,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  const addCompany = useCallback((input: CompanyInput) => {
+    const company = buildCompany(input)
+    setData((prev) => ({ ...prev, companies: [company, ...prev.companies] }))
+    return company.id
+  }, [])
+
   const addInterest = useCallback(
     (input: InterestInput) => {
       const sourceLabel = input.source === 'zoho' ? 'Zoho' : 'the landing page'
@@ -271,6 +321,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       updateMatch,
       updateCandidate,
       updateCompany,
+      addCompany,
       addInterest,
       resetData,
     }),
@@ -284,6 +335,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       updateMatch,
       updateCandidate,
       updateCompany,
+      addCompany,
       addInterest,
       resetData,
     ],

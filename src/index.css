@@ -3,6 +3,21 @@
 @tailwind utilities;
 
 @layer base {
+  /* Default accent scale (muted Nordic teal). The company dashboard overrides
+     these variables at runtime to theme the UI in each company's brand color. */
+  :root {
+    --accent-50: 238 246 244;
+    --accent-100: 214 235 230;
+    --accent-200: 174 215 206;
+    --accent-300: 127 188 176;
+    --accent-400: 84 155 142;
+    --accent-500: 58 128 115;
+    --accent-600: 45 103 92;
+    --accent-700: 39 83 75;
+    --accent-800: 33 67 61;
+    --accent-900: 28 56 51;
+  }
+
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useData } from '../lib/store'
-import { Tag } from '../components/ui'
+import { Tag, Avatar } from '../components/ui'
+import { brandThemeVars, logoCandidates, domainFromWebsite } from '../lib/brand'
 import { IconCheck, IconPin, IconBriefcase, IconStar, IconArrowRight, IconSpark } from '../components/icons'
 
 // Public, no-auth landing page. A candidate (e.g. arriving from a Zoho email)
@@ -35,6 +36,11 @@ export function Apply() {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
 
+  // Theme the landing page in the opportunity's company brand.
+  const themeVars = company ? brandThemeVars(company.brandColor ?? company.logoColor) : undefined
+  const logoDomain = domainFromWebsite(company?.website)
+  const logoSrcs = company?.logoUrl ? [company.logoUrl] : logoDomain ? logoCandidates(logoDomain) : []
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!company) return
@@ -56,7 +62,7 @@ export function Apply() {
   }
 
   return (
-    <div className="min-h-screen bg-sand-100">
+    <div className="min-h-screen bg-sand-100" style={themeVars}>
       {/* Brand bar */}
       <header className="border-b border-ink-200/60 bg-white">
         <div className="mx-auto flex max-w-3xl items-center gap-2.5 px-5 py-4">
@@ -78,9 +84,14 @@ export function Apply() {
           <>
             {/* Opportunity hero */}
             <div className="overflow-hidden rounded-2xl bg-accent-800 p-7 text-white shadow-soft">
-              <p className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-accent-200">
-                <IconSpark width={14} height={14} /> Board opportunity
-              </p>
+              <div className="flex items-start justify-between gap-4">
+                <p className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-accent-200">
+                  <IconSpark width={14} height={14} /> Board opportunity
+                </p>
+                {logoSrcs.length > 0 && (
+                  <Avatar name={company.name} color="#ffffff" size="md" srcs={logoSrcs} />
+                )}
+              </div>
               <h1 className="mt-2 font-display text-3xl font-semibold leading-tight">
                 {company.seatTitle}
               </h1>
