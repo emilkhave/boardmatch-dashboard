@@ -13,6 +13,7 @@ import { mockCandidates } from '../data/mockCandidates'
 import { mockCompanies } from '../data/mockCompanies'
 import { mockMatches } from '../data/mockMatches'
 import { TODAY_ISO } from './format'
+import { fetchServerData } from './api'
 
 // ---------------------------------------------------------------------------
 // A lightweight in-memory store for the mutable parts of the prototype —
@@ -181,6 +182,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
       /* ignore quota / private-mode errors in the prototype */
     }
   }, [data])
+
+  // Hydrate from the shared backend (Zoho-sourced interest), if configured.
+  // Additive only — never overwrites local edits. Polls so new interest appears.
+  useEffect(() => {
+    let active = true
+    const sync = async () => {
+      const srv = await fetchServerData()
+      if (!srv || !active) return
+      setData((prev) => {
+        const candIds = new Set(prev.candidates.map((c) => c.id))
+        const matchIds = new Set(prev.matches.map((m) => m.id))
+        const companyIds = new Set(prev.companies.map((c) => c.id))
+        const newCands = srv.candidates.filter((c) => !candIds.has(c.id))
+        const newMatches = srv.matches.filter(
+          (m) => !matchIds.has(m.id) && companyIds.has(m.companyId),
+        )
+        if (!newCands.length && !newMatches.length) return prev
+        return {
+          ...prev,
+          candidates: [...newCands, ...prev.candidates],
+          matches: [...newMatches, ...prev.matches],
+        }
+      })
+    }
+    sync()
+    const iv = setInterval(sync, 30_000)
+    return () => {
+      active = false
+      clearInterval(iv)
+    }
+  }, [])
 
   const getCompany = useCallback(
     (id: string) => data.companies.find((c) => c.id === id),

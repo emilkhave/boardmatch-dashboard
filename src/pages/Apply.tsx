@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useData } from '../lib/store'
+import { postInterest } from '../lib/api'
 import { Tag, Avatar } from '../components/ui'
 import { brandThemeVars, logoCandidates, domainFromWebsite } from '../lib/brand'
 import { IconCheck, IconPin, IconBriefcase, IconStar, IconArrowRight, IconSpark } from '../components/icons'
@@ -24,16 +25,15 @@ export function Apply() {
   )
   const company = companies.find((c) => c.id === selectedId)
 
-  // Pre-fill from query params — this is how Zoho / an email merge would pass data.
-  const [name, setName] = useState(params.get('name') ?? '')
-  const [title, setTitle] = useState(params.get('title') ?? '')
+  // Pre-fill from query params — this is how a Zoho email merge would pass data.
+  const [firstName, setFirstName] = useState(params.get('firstName') ?? params.get('name') ?? '')
+  const [lastName, setLastName] = useState(params.get('lastName') ?? '')
   const [email, setEmail] = useState(params.get('email') ?? '')
-  const [linkedin, setLinkedin] = useState(params.get('linkedin') ?? '')
-  const [location, setLocation] = useState(params.get('location') ?? '')
   const [message, setMessage] = useState('')
-  const prefilled = Boolean(params.get('name') || params.get('email'))
+  const prefilled = Boolean(params.get('firstName') || params.get('name') || params.get('email'))
 
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
   // Theme the landing page in the opportunity's company brand.
@@ -41,23 +41,38 @@ export function Apply() {
   const logoDomain = domainFromWebsite(company?.website)
   const logoSrcs = company?.logoUrl ? [company.logoUrl] : logoDomain ? logoCandidates(logoDomain) : []
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!company) return
-    if (!name.trim() || !email.trim()) {
-      setError('Please enter your name and email.')
+    if (!firstName.trim() || !email.trim()) {
+      setError('Please enter your first name and email.')
       return
     }
-    addInterest({
+    setError('')
+    setSubmitting(true)
+
+    // Real path: server matches the person in Zoho + stores them for both dashboards.
+    const result = await postInterest({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
       companyId: company.id,
-      name,
-      title,
-      email,
-      linkedin,
-      location,
-      message,
-      source: 'landing',
+      message: message.trim(),
     })
+
+    // Fallback for when the backend isn't configured yet: write to the local store.
+    if (!result.ok || !result.configured) {
+      addInterest({
+        companyId: company.id,
+        name: `${firstName} ${lastName}`.trim(),
+        title: '',
+        email: email.trim(),
+        message: message.trim(),
+        source: 'landing',
+      })
+    }
+
+    setSubmitting(false)
     setSubmitted(true)
   }
 
@@ -75,7 +90,7 @@ export function Apply() {
 
       <main className="mx-auto max-w-3xl px-5 py-8 sm:py-12">
         {submitted ? (
-          <SuccessCard companyName={company?.name ?? ''} name={name} />
+          <SuccessCard companyName={company?.name ?? ''} name={firstName} />
         ) : !company ? (
           <div className="card p-8 text-center text-sm text-ink-500">
             No open board opportunities right now.
@@ -160,22 +175,16 @@ export function Apply() {
               )}
 
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Full name *">
-                  <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+                <Field label="First name *">
+                  <input className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                 </Field>
-                <Field label="Current role / title">
-                  <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
-                </Field>
-                <Field label="Email *">
-                  <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </Field>
-                <Field label="Location">
-                  <input className="input" value={location} onChange={(e) => setLocation(e.target.value)} />
+                <Field label="Last name">
+                  <input className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                 </Field>
               </div>
               <div className="mt-4">
-                <Field label="LinkedIn (optional)">
-                  <input className="input" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} placeholder="linkedin.com/in/…" />
+                <Field label="Email *">
+                  <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </Field>
               </div>
               <div className="mt-4">
@@ -191,12 +200,12 @@ export function Apply() {
 
               {error && <p className="mt-3 text-sm font-medium text-rose-600">{error}</p>}
 
-              <button type="submit" className="btn-primary mt-6 w-full">
-                I’m interested
-                <IconArrowRight width={16} height={16} />
+              <button type="submit" className="btn-primary mt-6 w-full" disabled={submitting}>
+                {submitting ? 'Submitting…' : 'I’m interested'}
+                {!submitting && <IconArrowRight width={16} height={16} />}
               </button>
               <p className="mt-3 text-center text-xs text-ink-400">
-                By registering interest you agree to be contacted about this board role.
+                We’ll match your details and be in touch about this board role.
               </p>
             </form>
           </>

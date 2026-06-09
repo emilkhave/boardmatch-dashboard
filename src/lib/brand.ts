@@ -137,13 +137,29 @@ export function colorFromDomain(domain: string): string {
   return FALLBACK_PALETTE[h % FALLBACK_PALETTE.length]
 }
 
-// Resolve a brand color + logo for a website: try to read the logo's color,
-// otherwise derive one from the domain.
+// Resolve a brand color + logo for a website. Prefers the server-side resolver
+// (no CORS limits → accurate logo + color); falls back to a best-effort
+// client-side read if the API isn't available.
 export async function resolveBrand(
   website: string,
 ): Promise<{ brandColor: string; logoUrl?: string; domain: string } | null> {
   const domain = domainFromWebsite(website)
   if (!domain) return null
+
+  // 1) Accurate path — serverless brand resolver.
+  try {
+    const r = await fetch(`/api/brand?domain=${encodeURIComponent(domain)}`)
+    if (r.ok) {
+      const j = await r.json()
+      if (j?.ok && j.brandColor) {
+        return { domain, logoUrl: j.logoUrl, brandColor: j.brandColor }
+      }
+    }
+  } catch {
+    /* fall through to client-side best effort */
+  }
+
+  // 2) Client-side fallback (often CORS-limited).
   const logos = logoCandidates(domain)
   let brandColor: string | null = null
   for (const url of logos) {
