@@ -84,10 +84,11 @@ export function CompanyDashboard() {
       </header>
 
       <div className="mx-auto max-w-[1500px] space-y-6 px-5 py-6 lg:px-8">
-        {/* Seat banner — kept intentionally clean */}
+        {/* Banner — kept intentionally clean */}
         <div className="overflow-hidden rounded-2xl bg-accent-800 p-6 text-white shadow-soft">
-          <p className="text-xs font-medium uppercase tracking-wide text-accent-200">Recruiting for</p>
-          <h1 className="mt-1 font-display text-2xl font-semibold">{company.seatTitle}</h1>
+          <h1 className="font-display text-2xl font-semibold">
+            {company.name} <span className="font-normal text-accent-100">Pipeline</span>
+          </h1>
         </div>
 
         {/* Stats */}
