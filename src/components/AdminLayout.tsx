@@ -6,6 +6,7 @@ import {
   IconBuilding,
   IconUsers,
   IconFlow,
+  IconSpark,
   IconLogout,
 } from './icons'
 
@@ -14,6 +15,7 @@ const nav = [
   { to: '/admin/companies', label: 'Companies', icon: IconBuilding },
   { to: '/admin/candidates', label: 'Candidates', icon: IconUsers },
   { to: '/admin/matches', label: 'Pipeline', icon: IconFlow },
+  { to: '/admin/intake', label: 'Intake & Zoho', icon: IconSpark },
 ]
 
 export function AdminLayout() {

@@ -58,6 +58,29 @@ src/
   App.tsx          routing + role guards
 ```
 
+## Candidate intake & Zoho
+
+- **Public landing page** at `/apply` (or `/apply/:companyId` for a specific board seat).
+  A candidate reviews the opportunity and clicks **“I’m interested”** → they’re added to the
+  **Interested** stage of that company’s pipeline and Emil’s admin pipeline. Details can be
+  pre-filled via query params (`?name=…&title=…&email=…`) — this is how a Zoho email merge
+  would pass data.
+- **Admin → Intake & Zoho** lists shareable landing-page links per company, plus a Zoho
+  integration panel (data center, module, Client/Org ID, inbound webhook URL) and a demo
+  **“Sync candidates from Zoho”** button so the flow is testable today.
+- **Webhook endpoint**: `api/zoho/webhook.ts` (Vercel serverless) — live at
+  `/api/zoho/webhook`. Point a Zoho Workflow webhook at it to test delivery.
+
+### Making Zoho sync real (production)
+The current sync uses sample records and a stub webhook so the end-to-end flow works in the
+browser. Real two-way sync needs a small backend (the `api/` functions + a database):
+1. **Auth** — Zoho OAuth 2.0; store the refresh token server-side only.
+2. **Read** — Zoho CRM REST API v2 (`/crm/v2/Leads|Contacts`) or Zoho Recruit Candidates.
+3. **Realtime in** — Zoho Notifications/Webhook → `POST /api/zoho/webhook` → upsert into the DB.
+4. **Write back** — on pipeline stage changes, `PUT` the record in Zoho.
+
+The dashboards would then read candidates/matches from that shared DB instead of localStorage.
+
 ## Mock data
 10 companies · 26 candidates · ~45 candidate–company matches across all pipeline stages,
 with fit scores, last-contact dates, notes and per-match activity history. All dates are

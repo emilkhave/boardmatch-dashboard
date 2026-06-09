@@ -8,9 +8,11 @@ import { AdminCompanies } from './pages/admin/AdminCompanies'
 import { AdminCompanyDetail } from './pages/admin/AdminCompanyDetail'
 import { AdminCandidates } from './pages/admin/AdminCandidates'
 import { AdminMatches } from './pages/admin/AdminMatches'
+import { AdminIntake } from './pages/admin/AdminIntake'
 import { CompanyLayout } from './components/CompanyLayout'
 import { CompanyDashboard } from './pages/CompanyDashboard'
 import { CompanySettings } from './pages/CompanySettings'
+import { Apply } from './pages/Apply'
 import type { Role } from './types'
 
 function RequireRole({ role, children }: { role: Role; children: React.ReactNode }) {
@@ -37,6 +39,10 @@ export default function App() {
           <Route path="/" element={<LandingRedirect />} />
           <Route path="/login" element={<Login />} />
 
+          {/* Public candidate landing page (e.g. linked from a Zoho email) */}
+          <Route path="/apply" element={<Apply />} />
+          <Route path="/apply/:companyId" element={<Apply />} />
+
           {/* Admin */}
           <Route
             path="/admin"
@@ -51,6 +57,7 @@ export default function App() {
             <Route path="companies/:id" element={<AdminCompanyDetail />} />
             <Route path="candidates" element={<AdminCandidates />} />
             <Route path="matches" element={<AdminMatches />} />
+            <Route path="intake" element={<AdminIntake />} />
           </Route>
 
           {/* Company */}
