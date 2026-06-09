@@ -115,7 +115,7 @@ async function logoBrandColor(url: string): Promise<{ hex: string; sat: number }
   try {
     const sharp = (await import('sharp')).default
     const ctrl = new AbortController()
-    const t = setTimeout(() => ctrl.abort(), 6000)
+    const t = setTimeout(() => ctrl.abort(), 4000)
     const resp = await fetch(url, { signal: ctrl.signal, redirect: 'follow' }).finally(() => clearTimeout(t))
     if (!resp.ok) return null
     const input = Buffer.from(await resp.arrayBuffer())
@@ -203,8 +203,17 @@ export default async function handler(req: any, res: any) {
   const logoUrl = candidates[0]
   const themeColor = html ? pickThemeColor(html) : null
 
-  // Read the brand color from the actual logo icon.
-  const fromLogo = await logoBrandColor(logoUrl)
+  // Read the brand color from the logo. Try several sources (sharp can't decode
+  // .ico, so skip those) and keep the most saturated result.
+  let fromLogo: { hex: string; sat: number } | null = null
+  for (const url of candidates.slice(0, 4)) {
+    if (/\.ico(\?|$)/i.test(url)) continue
+    const c = await logoBrandColor(url)
+    if (c && isUsable(c.hex)) {
+      if (!fromLogo || c.sat > fromLogo.sat) fromLogo = c
+      if (c.sat >= 0.4) break
+    }
+  }
 
   // Choose: a saturated logo color beats a greyish theme-color; otherwise prefer
   // a usable theme-color; otherwise the logo color; otherwise a domain fallback.
