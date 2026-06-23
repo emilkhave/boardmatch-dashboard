@@ -2,30 +2,52 @@ import { useState } from 'react'
 import { PageHeader } from '../../components/AdminLayout'
 import { Card, CardHeader, Avatar } from '../../components/ui'
 import { useData } from '../../lib/store'
-import { useZohoConfig, MOCK_ZOHO_CANDIDATES, ZOHO_WEBHOOK_PATH, type ZohoDataCenter, type ZohoModule } from '../../lib/zoho'
+import { useZohoConfig, ZOHO_WEBHOOK_PATH, type ZohoDataCenter, type ZohoModule } from '../../lib/zoho'
 import { formatDate } from '../../lib/format'
 import { IconCheck, IconLink, IconArrowRight, IconSpark } from '../../components/icons'
 
 const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
 export function AdminIntake() {
-  const { companies, addInterest } = useData()
+  const { companies, candidates, refresh, clearDemo } = useData()
   const { config, update } = useZohoConfig()
   const [syncResult, setSyncResult] = useState<string | null>(null)
+  const [syncToken, setSyncToken] = useState('')
+  const [syncing, setSyncing] = useState(false)
 
   const openCompanies = companies.filter((c) => c.status !== 'placed')
   const webhookUrl = `${origin}${ZOHO_WEBHOOK_PATH}`
+  const realCount = candidates.filter((c) => c.source === 'zoho').length
 
-  const runDemoSync = () => {
-    let created = 0
-    let updated = 0
-    for (const rec of MOCK_ZOHO_CANDIDATES) {
-      const res = addInterest(rec)
-      if (res.isNew) created++
-      else updated++
+  // Pull the REAL candidate base from Zoho into the dashboards.
+  const runSync = async () => {
+    if (!syncToken.trim()) {
+      setSyncResult('Enter your ZOHO_TEST_TOKEN to sync.')
+      return
     }
-    update({ connected: true, lastSyncedAt: new Date().toISOString().slice(0, 10) })
-    setSyncResult(`Synced ${MOCK_ZOHO_CANDIDATES.length} records — ${created} new candidate(s), ${updated} updated.`)
+    setSyncing(true)
+    setSyncResult(null)
+    try {
+      const r = await fetch(`/api/zoho-sync?token=${encodeURIComponent(syncToken.trim())}`, { method: 'POST' })
+      const j = await r.json()
+      if (j.ok) {
+        await refresh()
+        update({ connected: true, lastSyncedAt: new Date().toISOString().slice(0, 10) })
+        setSyncResult(`Imported ${j.imported} real candidate(s) from Zoho (${j.module}).`)
+      } else {
+        setSyncResult(`Sync failed: ${j.error || 'unknown error'}`)
+      }
+    } catch (e) {
+      setSyncResult(`Sync failed: ${String(e)}`)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const removeDemo = () => {
+    clearDemo()
+    void refresh()
+    setSyncResult('Demo candidates & pipeline removed — showing real data only.')
   }
 
   return (
@@ -146,27 +168,28 @@ export function AdminIntake() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 border-t border-ink-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-xs text-ink-500">
-                {config.lastSyncedAt
-                  ? `Last synced: ${formatDate(config.lastSyncedAt)}`
-                  : 'Never synced yet.'}
-              </div>
-              <div className="flex items-center gap-2">
-                {config.connected && (
-                  <button
-                    className="btn-secondary"
-                    onClick={() => {
-                      update({ connected: false })
-                      setSyncResult(null)
-                    }}
-                  >
-                    Disconnect
-                  </button>
-                )}
-                <button className="btn-primary" onClick={runDemoSync}>
+            <div className="border-t border-ink-100 pt-5">
+              <span className="label">Sync token (your ZOHO_TEST_TOKEN)</span>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  className="input"
+                  type="password"
+                  value={syncToken}
+                  onChange={(e) => setSyncToken(e.target.value)}
+                  placeholder="paste ZOHO_TEST_TOKEN"
+                />
+                <button className="btn-primary shrink-0" onClick={runSync} disabled={syncing}>
                   <IconSpark width={16} height={16} />
-                  Sync candidates from Zoho
+                  {syncing ? 'Syncing…' : 'Sync candidates from Zoho'}
+                </button>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs text-ink-500">
+                  {config.lastSyncedAt ? `Last synced: ${formatDate(config.lastSyncedAt)}` : 'Never synced yet.'}
+                  {realCount > 0 && ` · ${realCount} real candidate(s) loaded`}
+                </span>
+                <button className="btn-secondary text-xs" onClick={removeDemo}>
+                  Remove demo data (show real only)
                 </button>
               </div>
             </div>
@@ -177,9 +200,9 @@ export function AdminIntake() {
               </p>
             )}
             <p className="rounded-xl bg-sand-100 px-4 py-3 text-xs text-ink-500">
-              <span className="font-semibold text-ink-700">Prototype note:</span> “Sync” currently
-              imports sample Zoho records so you can test the flow now. Real OAuth + API/webhook sync
-              is wired through <code>{ZOHO_WEBHOOK_PATH}</code> once the backend is connected.
+              <span className="font-semibold text-ink-700">Live:</span> “Sync” pulls your real Zoho
+              records (module <code>{config.module}</code>) into the dashboards. “Remove demo data”
+              clears the sample candidates/pipeline so only real Zoho data remains.
             </p>
           </div>
         </Card>

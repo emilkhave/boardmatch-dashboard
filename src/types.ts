@@ -76,6 +76,10 @@ export interface Candidate {
   linkedin: string
   avatarColor: string
   createdAt: string
+  // Additional labelled fields pulled from Zoho (shown in the candidate panel).
+  extra?: { label: string; value: string }[]
+  // Marks records imported from Zoho vs. demo/mock seed data.
+  source?: 'zoho' | 'landing' | 'demo'
 }
 
 export interface MatchActivity {

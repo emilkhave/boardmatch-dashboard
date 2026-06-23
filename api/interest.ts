@@ -100,10 +100,49 @@ function listVal(rec: any, keys: string[]): string[] {
   }
   return []
 }
+// Renders a Zoho value (string | bool | array | lookup object) to a display string.
+function cell(rec: any, keys: string[]): string {
+  for (const k of keys) {
+    const v = rec?.[k]
+    if (v == null || v === '') continue
+    if (typeof v === 'boolean') return v ? 'Yes' : ''
+    if (Array.isArray(v)) {
+      const a = v.filter(Boolean)
+      if (a.length) return a.join(', ')
+      continue
+    }
+    if (typeof v === 'object') {
+      if (v.name) return String(v.name)
+      continue
+    }
+    return String(v)
+  }
+  return ''
+}
+
+// Extra Zoho fields surfaced as labelled key/value pairs in the candidate panel.
+const EXTRA_FIELDS: { label: string; keys: string[] }[] = [
+  { label: 'Company', keys: ['Company', 'Account_Name'] },
+  { label: 'Partnership goals', keys: ['Partnership_Goals'] },
+  { label: 'Partnership goals — detail', keys: ['Partnership_Goals_Elaboration'] },
+  { label: 'Motivation towards startups', keys: ['Motivation_towards_Startups'] },
+  { label: 'Key competencies & industry', keys: ['key_competencies_and_industry_experience'] },
+  { label: 'Advisory board experience', keys: ['Advisory_Board_Experience'] },
+  { label: 'Investment experience', keys: ['Investment_Experiences_Text', 'Investment_Experiences'] },
+  { label: 'Considering investing', keys: ['Considering_investing'] },
+  { label: 'Investment range', keys: ['investment_range', 'Investment_Range'] },
+  { label: 'Membership status', keys: ['Membership_Status'] },
+  { label: 'Membership type', keys: ['Membership_Type'] },
+  { label: 'Language', keys: ['Language'] },
+]
+
 function mapZoho(rec: any) {
   const m = fieldMap()
   const city = firstVal(rec, m.city)
   const country = firstVal(rec, m.country)
+  const extra = EXTRA_FIELDS.map((f) => ({ label: f.label, value: cell(rec, f.keys) })).filter(
+    (e) => e.value,
+  )
   return {
     name: firstVal(rec, m.name),
     title: firstVal(rec, m.title),
@@ -114,6 +153,7 @@ function mapZoho(rec: any) {
     bio: firstVal(rec, m.bio),
     boardExperience: firstVal(rec, m.boardExperience),
     location: [city, country].filter(Boolean).join(', '),
+    extra,
   }
 }
 
@@ -199,6 +239,8 @@ export default async function handler(req: any, res: any) {
         linkedin: zoho?.linkedin || '',
         avatarColor: pickColor(email),
         createdAt: today(),
+        extra: zoho?.extra,
+        source: zoho ? 'zoho' : 'landing',
       }
       await upsertData('candidates', candidate.id, candidate)
     } else if (zoho) {

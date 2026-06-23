@@ -45,6 +45,10 @@ interface DataContextValue {
   addCompany: (input: CompanyInput) => string
   /** Register candidate interest (landing page / Zoho) → adds them to the pipeline. */
   addInterest: (input: InterestInput) => { candidateId: string; matchId: string; isNew: boolean }
+  /** Pull the latest server data (Zoho/landing) and merge it in. */
+  refresh: () => Promise<void>
+  /** Remove demo candidates + pipeline so only real (server) data remains. */
+  clearDemo: () => void
   resetData: () => void
 }
 
@@ -183,35 +187,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [data])
 
-  // Hydrate from the shared backend (Zoho-sourced interest), if configured.
-  // Additive only — never overwrites local edits. Polls so new interest appears.
-  useEffect(() => {
-    let active = true
-    const sync = async () => {
-      const srv = await fetchServerData()
-      if (!srv || !active) return
-      setData((prev) => {
-        const candIds = new Set(prev.candidates.map((c) => c.id))
-        const matchIds = new Set(prev.matches.map((m) => m.id))
-        const companyIds = new Set(prev.companies.map((c) => c.id))
-        const newCands = srv.candidates.filter((c) => !candIds.has(c.id))
-        const newMatches = srv.matches.filter(
-          (m) => !matchIds.has(m.id) && companyIds.has(m.companyId),
-        )
-        if (!newCands.length && !newMatches.length) return prev
-        return {
-          ...prev,
-          candidates: [...newCands, ...prev.candidates],
-          matches: [...newMatches, ...prev.matches],
+  // Hydrate from the shared backend (Zoho-sourced data), if configured.
+  // Additive only — never overwrites local edits. Polled so new data appears.
+  const refresh = useCallback(async () => {
+    const srv = await fetchServerData()
+    if (!srv) return
+    setData((prev) => {
+      const candById = new Map(prev.candidates.map((c) => [c.id, c]))
+      const matchIds = new Set(prev.matches.map((m) => m.id))
+      const companyIds = new Set(prev.companies.map((c) => c.id))
+      let changed = false
+      // Upsert server candidates (so Zoho edits/syncs update existing rows too).
+      const candidates = [...prev.candidates]
+      for (const c of srv.candidates) {
+        const existing = candById.get(c.id)
+        if (!existing) {
+          candidates.unshift(c)
+          changed = true
+        } else if (JSON.stringify(existing) !== JSON.stringify(c)) {
+          candidates[candidates.indexOf(existing)] = c
+          changed = true
         }
-      })
-    }
-    sync()
-    const iv = setInterval(sync, 30_000)
-    return () => {
-      active = false
-      clearInterval(iv)
-    }
+      }
+      const newMatches = srv.matches.filter((m) => !matchIds.has(m.id) && companyIds.has(m.companyId))
+      if (!changed && !newMatches.length) return prev
+      return { ...prev, candidates, matches: [...newMatches, ...prev.matches] }
+    })
+  }, [])
+
+  useEffect(() => {
+    refresh()
+    const iv = setInterval(refresh, 30_000)
+    return () => clearInterval(iv)
+  }, [refresh])
+
+  const clearDemo = useCallback(() => {
+    setData((prev) => ({ ...prev, candidates: [], matches: [] }))
   }, [])
 
   const getCompany = useCallback(
@@ -355,6 +366,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       updateCompany,
       addCompany,
       addInterest,
+      refresh,
+      clearDemo,
       resetData,
     }),
     [
@@ -369,6 +382,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       updateCompany,
       addCompany,
       addInterest,
+      refresh,
+      clearDemo,
       resetData,
     ],
   )

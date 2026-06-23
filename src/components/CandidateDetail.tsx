@@ -176,9 +176,24 @@ function ReadView({
           </div>
         </Section>
 
-        <Section title="Board experience">
-          <p className="text-sm leading-relaxed text-ink-700">{candidate.boardExperience}</p>
-        </Section>
+        {candidate.boardExperience && (
+          <Section title="Board experience">
+            <p className="text-sm leading-relaxed text-ink-700">{candidate.boardExperience}</p>
+          </Section>
+        )}
+
+        {candidate.extra && candidate.extra.length > 0 && (
+          <Section title="More from Zoho">
+            <dl className="divide-y divide-ink-100 rounded-xl border border-ink-100 bg-white">
+              {candidate.extra.map((f) => (
+                <div key={f.label} className="px-4 py-2.5">
+                  <dt className="text-xs font-medium text-ink-400">{f.label}</dt>
+                  <dd className="mt-0.5 whitespace-pre-line text-sm text-ink-700">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </Section>
+        )}
 
         <Section title="Contact details">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
