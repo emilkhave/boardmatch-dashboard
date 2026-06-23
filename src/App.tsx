@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import { DataProvider } from './lib/store'
+import { SessionBootstrap } from './components/SessionBootstrap'
 import { Login } from './pages/Login'
 import { AdminLayout } from './components/AdminLayout'
 import { AdminOverview } from './pages/admin/AdminOverview'
@@ -15,8 +16,17 @@ import { CompanySettings } from './pages/CompanySettings'
 import { Apply } from './pages/Apply'
 import type { Role } from './types'
 
+function Splash() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-sand-100">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-ink-200 border-t-accent-600" />
+    </div>
+  )
+}
+
 function RequireRole({ role, children }: { role: Role; children: React.ReactNode }) {
-  const { session } = useAuth()
+  const { session, loading } = useAuth()
+  if (loading) return <Splash />
   if (!session) return <Navigate to="/login" replace />
   if (session.role !== role) {
     return <Navigate to={session.role === 'admin' ? '/admin' : '/company'} replace />
@@ -25,7 +35,8 @@ function RequireRole({ role, children }: { role: Role; children: React.ReactNode
 }
 
 function LandingRedirect() {
-  const { session } = useAuth()
+  const { session, loading } = useAuth()
+  if (loading) return <Splash />
   if (!session) return <Navigate to="/login" replace />
   return <Navigate to={session.role === 'admin' ? '/admin' : '/company'} replace />
 }
@@ -35,43 +46,44 @@ export default function App() {
     <AuthProvider>
       <DataProvider>
         <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingRedirect />} />
-          <Route path="/login" element={<Login />} />
+          <SessionBootstrap />
+          <Routes>
+            <Route path="/" element={<LandingRedirect />} />
+            <Route path="/login" element={<Login />} />
 
-          {/* Public candidate landing page (e.g. linked from a Zoho email) */}
-          <Route path="/apply" element={<Apply />} />
-          <Route path="/apply/:companyId" element={<Apply />} />
+            {/* Public candidate landing page (e.g. linked from a Zoho email) */}
+            <Route path="/apply" element={<Apply />} />
+            <Route path="/apply/:companyId" element={<Apply />} />
 
-          {/* Admin */}
-          <Route
-            path="/admin"
-            element={
-              <RequireRole role="admin">
-                <AdminLayout />
-              </RequireRole>
-            }
-          >
-            <Route index element={<AdminOverview />} />
-            <Route path="companies" element={<AdminCompanies />} />
-            <Route path="companies/:id" element={<AdminCompanyDetail />} />
-            <Route path="candidates" element={<AdminCandidates />} />
-            <Route path="matches" element={<AdminMatches />} />
-            <Route path="intake" element={<AdminIntake />} />
-          </Route>
+            {/* Admin */}
+            <Route
+              path="/admin"
+              element={
+                <RequireRole role="admin">
+                  <AdminLayout />
+                </RequireRole>
+              }
+            >
+              <Route index element={<AdminOverview />} />
+              <Route path="companies" element={<AdminCompanies />} />
+              <Route path="companies/:id" element={<AdminCompanyDetail />} />
+              <Route path="candidates" element={<AdminCandidates />} />
+              <Route path="matches" element={<AdminMatches />} />
+              <Route path="intake" element={<AdminIntake />} />
+            </Route>
 
-          {/* Company */}
-          <Route
-            path="/company"
-            element={
-              <RequireRole role="company">
-                <CompanyLayout />
-              </RequireRole>
-            }
-          >
-            <Route index element={<CompanyDashboard />} />
-            <Route path="settings" element={<CompanySettings />} />
-          </Route>
+            {/* Company */}
+            <Route
+              path="/company"
+              element={
+                <RequireRole role="company">
+                  <CompanyLayout />
+                </RequireRole>
+              }
+            >
+              <Route index element={<CompanyDashboard />} />
+              <Route path="settings" element={<CompanySettings />} />
+            </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -43,6 +43,8 @@ interface DataContextValue {
   updateCompany: (companyId: string, patch: Partial<Company>) => void
   /** Create a new company (self-service sign-up). Returns the new id. */
   addCompany: (input: CompanyInput) => string
+  /** Insert or replace a company by id (used to provision a logged-in company). */
+  upsertCompany: (company: Company) => void
   /** Register candidate interest (landing page / Zoho) → adds them to the pipeline. */
   addInterest: (input: InterestInput) => { candidateId: string; matchId: string; isNew: boolean }
   /** Pull the latest server data (Zoho/landing) and merge it in. */
@@ -289,6 +291,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return company.id
   }, [])
 
+  const upsertCompany = useCallback((company: Company) => {
+    setData((prev) => ({
+      ...prev,
+      companies: prev.companies.some((c) => c.id === company.id)
+        ? prev.companies.map((c) => (c.id === company.id ? company : c))
+        : [company, ...prev.companies],
+    }))
+  }, [])
+
   const addInterest = useCallback(
     (input: InterestInput) => {
       const sourceLabel = input.source === 'zoho' ? 'Zoho' : 'the landing page'
@@ -365,6 +376,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       updateCandidate,
       updateCompany,
       addCompany,
+      upsertCompany,
       addInterest,
       refresh,
       clearDemo,
@@ -381,6 +393,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       updateCandidate,
       updateCompany,
       addCompany,
+      upsertCompany,
       addInterest,
       refresh,
       clearDemo,

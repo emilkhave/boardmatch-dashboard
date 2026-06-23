@@ -19,11 +19,11 @@ const nav = [
 ]
 
 export function AdminLayout() {
-  const { session, logout } = useAuth()
+  const { session, signOut } = useAuth()
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await signOut()
     navigate('/login')
   }
 

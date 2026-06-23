@@ -6,21 +6,21 @@ import { brandThemeVars, logoCandidates, domainFromWebsite } from '../lib/brand'
 import { IconLogout, IconFlow, IconSettings } from './icons'
 
 export function CompanyLayout() {
-  const { session, logout } = useAuth()
+  const { session, signOut } = useAuth()
   const navigate = useNavigate()
   const { getCompany } = useData()
 
   const company = session?.companyId ? getCompany(session.companyId) : undefined
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await signOut()
     navigate('/login')
   }
 
   if (!company) {
     return (
       <div className="grid min-h-screen place-items-center bg-sand-100">
-        <p className="text-sm text-ink-500">No company selected.</p>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-ink-200 border-t-accent-600" />
       </div>
     )
   }
