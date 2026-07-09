@@ -133,6 +133,39 @@ Then **Deployments → ⋯ on the latest → Redeploy** (or push any commit).
 
 ---
 
+## E. Authentication — real logins (Supabase Auth)
+
+Accounts, passwords and sessions use **Supabase Auth** (same Supabase project as the database).
+
+1. **Disable email confirmation** (so accounts work instantly): Supabase → **Authentication →
+   Providers → Email** → turn **"Confirm email" OFF** → Save. (Leave on if you want email
+   verification, but then new users must confirm before their first sign-in.)
+2. **Get the public client keys**: Supabase → **Settings → API** → copy the **Project URL** and the
+   **`anon` public** key (the JWT starting `eyJ…` — *not* `service_role`).
+3. Set these in **Vercel → Settings → Environment Variables** (they are baked into the browser
+   build, so **redeploy** after setting them):
+
+   | Name | Value |
+   |------|-------|
+   | `VITE_SUPABASE_URL` | your Project URL |
+   | `VITE_SUPABASE_ANON_KEY` | the `anon` public key |
+
+Until these are set the app falls back to a demo sign-in; once set, the login screen offers
+**Sign in / Create account** (Company or Admin). The `anon` key is public by design — security
+comes from Supabase Auth + row-level security, not from hiding it.
+
+## Full environment-variable summary
+
+| Variable | Where | Secret? |
+|----------|-------|---------|
+| `SUPABASE_URL` | Vercel (server) | no |
+| `SUPABASE_SERVICE_ROLE_KEY` | Vercel (server) | **YES** |
+| `VITE_SUPABASE_URL` | Vercel (client build) | no |
+| `VITE_SUPABASE_ANON_KEY` | Vercel (client build) | no (public) |
+| `ZOHO_CLIENT_ID` / `ZOHO_CLIENT_SECRET` / `ZOHO_REFRESH_TOKEN` | Vercel (server) | **YES** |
+| `ZOHO_MODULE` (`Contacts`), `ZOHO_EMAIL_FIELD` (`Email`) | Vercel (server) | no |
+| `ZOHO_TEST_TOKEN` | Vercel (server) | keep private |
+
 ## Security notes
 - Secrets are **only** in Vercel env vars (encrypted, server-side). They are never in the
   frontend bundle, the Git repo, or the browser. Never prefix them with `VITE_`.
