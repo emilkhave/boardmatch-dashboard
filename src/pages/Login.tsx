@@ -30,7 +30,6 @@ function RealAuth({
   signUp: (p: any) => Promise<{ error?: string }>
 }) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
-  const [role, setRole] = useState<Role>('company')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
@@ -57,15 +56,15 @@ function RealAuth({
       // success → the session effect navigates.
       return
     }
-    // Sign up
-    if (role === 'company' && !companyName.trim()) {
+    // Sign up — always a company account (admins are provisioned via the allowlist).
+    if (!companyName.trim()) {
       setBusy(false)
       setError('Enter your company name.')
       return
     }
     let brandColor: string | undefined
     let logoUrl: string | undefined
-    if (role === 'company' && website.trim()) {
+    if (website.trim()) {
       const b = await fetchBrand(website.trim())
       if (b) {
         brandColor = b.brandColor
@@ -75,7 +74,6 @@ function RealAuth({
     const { error } = await signUp({
       email: email.trim(),
       password,
-      role,
       name: name.trim() || companyName.trim() || email.trim(),
       companyName: companyName.trim(),
       website: website.trim(),
@@ -100,7 +98,7 @@ function RealAuth({
         {mode === 'signin' ? 'Welcome back' : 'Create your account'}
       </h2>
       <p className="mt-1 text-sm text-ink-500">
-        {mode === 'signin' ? 'Sign in to your dashboard.' : 'Set up your secure login.'}
+        {mode === 'signin' ? 'Sign in to your dashboard.' : 'Create your company workspace.'}
       </p>
 
       {/* Mode toggle */}
@@ -125,14 +123,15 @@ function RealAuth({
 
       <form onSubmit={submit} className="mt-5 space-y-4">
         {mode === 'signup' && (
-          <div className="grid grid-cols-2 gap-3">
-            <RoleTile active={role === 'company'} onClick={() => setRole('company')} icon={<IconBuilding />} title="Company" subtitle="Recruiting a board" />
-            <RoleTile active={role === 'admin'} onClick={() => setRole('admin')} icon={<IconGrid />} title="Admin" subtitle="Full overview" />
-          </div>
-        )}
-
-        {mode === 'signup' && role === 'company' && (
           <div className="animate-fade-in space-y-4">
+            <div className="flex items-start gap-2 rounded-xl border border-accent-200 bg-accent-50 p-3">
+              <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-600 text-white">
+                <IconBuilding width={15} height={15} />
+              </span>
+              <p className="text-xs text-accent-800">
+                You’re creating a <strong>company workspace</strong> to track your board search.
+              </p>
+            </div>
             <Field label="Company name *">
               <input className="input" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Acme A/S" />
             </Field>
@@ -147,9 +146,6 @@ function RealAuth({
               <Field label="Your role"><input className="input" value={contactRole} onChange={(e) => setContactRole(e.target.value)} /></Field>
             </div>
           </div>
-        )}
-        {mode === 'signup' && role === 'admin' && (
-          <Field label="Your name"><input className="input" value={name} onChange={(e) => setName(e.target.value)} /></Field>
         )}
 
         <Field label="Email">

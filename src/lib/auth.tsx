@@ -2,10 +2,11 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Role, Session } from '../types'
 import { supabase, supabaseConfigured } from './supabase'
 
+// Self-service sign-up is always a company account. Admin access is granted only
+// via the email allowlist (see isAdminEmail) — never through sign-up.
 export interface SignUpParams {
   email: string
   password: string
-  role: Role
   name: string
   companyName?: string
   website?: string
@@ -31,15 +32,28 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null)
 const MOCK_KEY = 'boardmatch.session'
 
+// Admin is decided by an email allowlist (VITE_ADMIN_EMAILS, comma-separated) —
+// NOT by anything the browser/user can set. Everyone else is a company. This
+// closes the hole where a sign-up could self-assign the admin role.
+const ADMIN_EMAILS: string[] = (import.meta.env.VITE_ADMIN_EMAILS as string | undefined ?? '')
+  .split(',')
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean)
+
+export function isAdminEmail(email: string | null | undefined): boolean {
+  return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
+}
+
 // Map a Supabase user → our app Session.
 function toSession(user: any): Session {
   const m = user.user_metadata ?? {}
-  const role: Role = m.role === 'admin' ? 'admin' : 'company'
+  const email = user.email || ''
+  const role: Role = isAdminEmail(email) ? 'admin' : 'company'
   return {
     role,
     companyId: role === 'company' ? user.id : undefined,
-    name: m.name || user.email || 'User',
-    email: user.email || '',
+    name: m.name || email || 'User',
+    email,
   }
 }
 
@@ -84,12 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (p: SignUpParams) => {
     if (!supabase) return { error: 'Auth is not configured yet.' }
+    // NB: role is intentionally NOT stored in user_metadata — it is derived from
+    // the admin email allowlist so a sign-up can never grant itself admin.
     const { error } = await supabase.auth.signUp({
       email: p.email,
       password: p.password,
       options: {
         data: {
-          role: p.role,
           name: p.name,
           companyName: p.companyName,
           website: p.website,

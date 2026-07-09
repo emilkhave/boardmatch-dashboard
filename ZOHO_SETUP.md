@@ -137,6 +137,11 @@ Then **Deployments → ⋯ on the latest → Redeploy** (or push any commit).
 
 Accounts, passwords and sessions use **Supabase Auth** (same Supabase project as the database).
 
+**How roles work (important):** whether you land in the **Admin** workspace or a **Company**
+workspace is decided by an **email allowlist** — `VITE_ADMIN_EMAILS` — not by anything the user
+picks at sign-up. Any email in that list becomes Admin; everyone who signs up is a Company. This
+means a client can never grant themselves admin access.
+
 1. **Disable email confirmation** (so accounts work instantly): Supabase → **Authentication →
    Providers → Email** → turn **"Confirm email" OFF** → Save. (Leave on if you want email
    verification, but then new users must confirm before their first sign-in.)
@@ -149,10 +154,15 @@ Accounts, passwords and sessions use **Supabase Auth** (same Supabase project as
    |------|-------|
    | `VITE_SUPABASE_URL` | your Project URL |
    | `VITE_SUPABASE_ANON_KEY` | the `anon` public key |
+   | `VITE_ADMIN_EMAILS` | your admin email(s), comma-separated — e.g. `have@thehatchpartners.com` |
 
-Until these are set the app falls back to a demo sign-in; once set, the login screen offers
-**Sign in / Create account** (Company or Admin). The `anon` key is public by design — security
-comes from Supabase Auth + row-level security, not from hiding it.
+4. **Create your admin account:** since sign-up only makes company accounts, create the admin
+   user directly in Supabase → **Authentication → Users → Add user** → use your allowlisted email
+   + a password (tick "Auto Confirm"). Now sign in on the site with that email → Admin workspace.
+
+Until the `VITE_SUPABASE_*` keys are set the app falls back to a demo sign-in; once set, the login
+screen offers **Sign in / Create account** (companies only). The `anon` key is public by design —
+security comes from Supabase Auth + row-level security, not from hiding it.
 
 ## Full environment-variable summary
 
@@ -162,6 +172,7 @@ comes from Supabase Auth + row-level security, not from hiding it.
 | `SUPABASE_SERVICE_ROLE_KEY` | Vercel (server) | **YES** |
 | `VITE_SUPABASE_URL` | Vercel (client build) | no |
 | `VITE_SUPABASE_ANON_KEY` | Vercel (client build) | no (public) |
+| `VITE_ADMIN_EMAILS` | Vercel (client build) | no (public) |
 | `ZOHO_CLIENT_ID` / `ZOHO_CLIENT_SECRET` / `ZOHO_REFRESH_TOKEN` | Vercel (server) | **YES** |
 | `ZOHO_MODULE` (`Contacts`), `ZOHO_EMAIL_FIELD` (`Email`) | Vercel (server) | no |
 | `ZOHO_TEST_TOKEN` | Vercel (server) | keep private |
