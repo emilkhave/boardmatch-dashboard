@@ -26,3 +26,5 @@ npm-debug.log*
 # TS build info
 *.tsbuildinfo
 .env*
+# …but keep the documented template (no real secrets in it)
+!.env.example
