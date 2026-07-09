@@ -14,6 +14,7 @@ import { mockCompanies } from '../data/mockCompanies'
 import { mockMatches } from '../data/mockMatches'
 import { TODAY_ISO } from './format'
 import { fetchServerData } from './api'
+import { useAuth } from './auth'
 
 // ---------------------------------------------------------------------------
 // A lightweight in-memory store for the mutable parts of the prototype —
@@ -180,6 +181,9 @@ function buildCandidate(input: InterestInput): Candidate {
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<StoredData>(readStored)
+  // The access token scopes the server response: admin gets everything, a company
+  // gets only its own pipeline. Sent with every /api/candidates request.
+  const { accessToken } = useAuth()
 
   useEffect(() => {
     try {
@@ -192,7 +196,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Hydrate from the shared backend (Zoho-sourced data), if configured.
   // Additive only — never overwrites local edits. Polled so new data appears.
   const refresh = useCallback(async () => {
-    const srv = await fetchServerData()
+    const srv = await fetchServerData(accessToken)
     if (!srv) return
     setData((prev) => {
       const candById = new Map(prev.candidates.map((c) => [c.id, c]))
@@ -215,7 +219,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (!changed && !newMatches.length) return prev
       return { ...prev, candidates, matches: [...newMatches, ...prev.matches] }
     })
-  }, [])
+  }, [accessToken])
 
   useEffect(() => {
     refresh()

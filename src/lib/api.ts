@@ -40,9 +40,11 @@ export interface ServerData {
   matches: Match[]
 }
 
-export async function fetchServerData(): Promise<ServerData | null> {
+export async function fetchServerData(accessToken?: string | null): Promise<ServerData | null> {
   try {
-    const r = await fetch('/api/candidates')
+    const r = await fetch('/api/candidates', {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    })
     if (!r.ok) return null
     const j = (await r.json()) as ServerData
     return j.configured ? j : null
