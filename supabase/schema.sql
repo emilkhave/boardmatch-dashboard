@@ -9,6 +9,15 @@
 -- therefore the browser) can never read or write these tables directly — the server
 -- is the only path in. Auth (logins) is handled by Supabase Auth, not these tables.
 
+-- One row per company client. id = the company's Supabase Auth user id, so a
+-- signed-in company can only ever write its own row (enforced in /api/company).
+create table if not exists public.companies (
+  id         text primary key,
+  data       jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.candidates (
   id         text primary key,
   data       jsonb not null,
@@ -37,6 +46,10 @@ begin
   return new;
 end $$;
 
+drop trigger if exists companies_touch on public.companies;
+create trigger companies_touch before update on public.companies
+  for each row execute function public.touch_updated_at();
+
 drop trigger if exists candidates_touch on public.candidates;
 create trigger candidates_touch before update on public.candidates
   for each row execute function public.touch_updated_at();
@@ -47,5 +60,6 @@ create trigger matches_touch before update on public.matches
 
 -- Lock the tables down: RLS on, and no policies → only the service_role key
 -- (used server-side) can touch them. The browser's anon key gets nothing.
+alter table public.companies  enable row level security;
 alter table public.candidates enable row level security;
 alter table public.matches    enable row level security;

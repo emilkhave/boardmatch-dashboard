@@ -13,7 +13,7 @@ import { mockCandidates } from '../data/mockCandidates'
 import { mockCompanies } from '../data/mockCompanies'
 import { mockMatches } from '../data/mockMatches'
 import { TODAY_ISO } from './format'
-import { fetchServerData } from './api'
+import { fetchServerData, fetchCompanies } from './api'
 import { useAuth } from './auth'
 
 // ---------------------------------------------------------------------------
@@ -193,16 +193,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [data])
 
-  // Hydrate from the shared backend (Zoho-sourced data), if configured.
-  // Additive only — never overwrites local edits. Polled so new data appears.
+  // Hydrate from the shared backend (server-stored companies + Zoho-sourced
+  // candidates/matches), if configured. Additive only — never overwrites local
+  // edits. Polled so new data appears.
   const refresh = useCallback(async () => {
-    const srv = await fetchServerData(accessToken)
-    if (!srv) return
+    const [srv, srvCompanies] = await Promise.all([
+      fetchServerData(accessToken),
+      fetchCompanies(accessToken),
+    ])
+    if (!srv && !srvCompanies) return
     setData((prev) => {
+      // Merge server companies first so their matches pass the company filter below.
+      let companies = prev.companies
+      let companyChanged = false
+      if (srvCompanies?.length) {
+        const byId = new Map(prev.companies.map((c) => [c.id, c]))
+        companies = [...prev.companies]
+        for (const c of srvCompanies) {
+          const existing = byId.get(c.id)
+          if (!existing) {
+            companies.unshift(c)
+            companyChanged = true
+          } else if (JSON.stringify(existing) !== JSON.stringify(c)) {
+            companies[companies.indexOf(existing)] = c
+            companyChanged = true
+          }
+        }
+      }
+
+      if (!srv) {
+        return companyChanged ? { ...prev, companies } : prev
+      }
+
       const candById = new Map(prev.candidates.map((c) => [c.id, c]))
       const matchIds = new Set(prev.matches.map((m) => m.id))
-      const companyIds = new Set(prev.companies.map((c) => c.id))
-      let changed = false
+      const companyIds = new Set(companies.map((c) => c.id))
+      let changed = companyChanged
       // Upsert server candidates (so Zoho edits/syncs update existing rows too).
       const candidates = [...prev.candidates]
       for (const c of srv.candidates) {
@@ -217,7 +243,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
       const newMatches = srv.matches.filter((m) => !matchIds.has(m.id) && companyIds.has(m.companyId))
       if (!changed && !newMatches.length) return prev
-      return { ...prev, candidates, matches: [...newMatches, ...prev.matches] }
+      return { ...prev, companies, candidates, matches: [...newMatches, ...prev.matches] }
     })
   }, [accessToken])
 

@@ -3,12 +3,14 @@ import { useAuth } from '../lib/auth'
 import { useData } from '../lib/store'
 import { supabase } from '../lib/supabase'
 import { primaryLogoUrl } from '../lib/brand'
+import { persistCompany } from '../lib/api'
 import type { Company } from '../types'
 
 // When a company user is signed in, make sure their company workspace exists in
-// the store (built from their account metadata). Runs once per session.
+// the store (built from their account metadata) AND is persisted server-side so
+// the admin sees every signed-up client. Runs once per session.
 export function SessionBootstrap() {
-  const { session, configured } = useAuth()
+  const { session, configured, accessToken } = useAuth()
   const { getCompany, upsertCompany } = useData()
 
   useEffect(() => {
@@ -46,8 +48,10 @@ export function SessionBootstrap() {
         createdAt: new Date().toISOString().slice(0, 10),
       }
       upsertCompany(company)
+      // Persist so it shows up in the admin's directory. Fire-and-forget.
+      void persistCompany(company, accessToken)
     })
-  }, [session, configured, getCompany, upsertCompany])
+  }, [session, configured, accessToken, getCompany, upsertCompany])
 
   return null
 }

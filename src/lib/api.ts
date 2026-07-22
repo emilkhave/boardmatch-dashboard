@@ -1,4 +1,4 @@
-import type { Candidate, Match } from '../types'
+import type { Candidate, Company, Match } from '../types'
 
 // Thin client for the serverless API. Everything degrades gracefully: if the
 // backend isn't configured yet, these return "not configured" and the app falls
@@ -50,6 +50,40 @@ export async function fetchServerData(accessToken?: string | null): Promise<Serv
     return j.configured ? j : null
   } catch {
     return null
+  }
+}
+
+// Fetch companies the caller may see (admin → all, company → own). Null when the
+// backend isn't configured or the request fails.
+export async function fetchCompanies(accessToken?: string | null): Promise<Company[] | null> {
+  if (!accessToken) return null
+  try {
+    const r = await fetch('/api/company', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (!r.ok) return null
+    const j = (await r.json()) as { configured: boolean; companies: Company[] }
+    return j.configured ? j.companies : null
+  } catch {
+    return null
+  }
+}
+
+// Persist the caller's own company (server forces the id to the caller's user id).
+export async function persistCompany(
+  company: Company,
+  accessToken?: string | null,
+): Promise<boolean> {
+  if (!accessToken) return false
+  try {
+    const r = await fetch('/api/company', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ company }),
+    })
+    return r.ok
+  } catch {
+    return false
   }
 }
 

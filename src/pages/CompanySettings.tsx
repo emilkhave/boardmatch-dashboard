@@ -3,10 +3,11 @@ import { useAuth } from '../lib/auth'
 import { useData } from '../lib/store'
 import { Avatar, Card, CardHeader } from '../components/ui'
 import { resolveBrand, logoCandidates, domainFromWebsite, primaryLogoUrl } from '../lib/brand'
+import { persistCompany } from '../lib/api'
 import { IconCheck, IconSpark } from '../components/icons'
 
 export function CompanySettings() {
-  const { session, updateSession } = useAuth()
+  const { session, updateSession, accessToken } = useAuth()
   const { getCompany, updateCompany } = useData()
   const company = session?.companyId ? getCompany(session.companyId) : undefined
 
@@ -61,7 +62,7 @@ export function CompanySettings() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    updateCompany(company.id, {
+    const patch = {
       contactName: contactName.trim() || company.contactName,
       contactRole: contactRole.trim(),
       contactEmail: contactEmail.trim(),
@@ -73,8 +74,11 @@ export function CompanySettings() {
       location: location.trim(),
       seatTitle: seatTitle.trim(),
       description: description.trim(),
-    })
+    }
+    updateCompany(company.id, patch)
     updateSession({ name: contactName.trim() || company.contactName, email: contactEmail.trim() })
+    // Persist so the admin sees the updated profile. Fire-and-forget.
+    void persistCompany({ ...company, ...patch }, accessToken)
     setSaved(true)
   }
 
